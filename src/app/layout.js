@@ -4,7 +4,6 @@ import { AuthProvider } from '@/components/AuthProvider';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AnnouncementPopup from '@/components/AnnouncementPopup';
-import NotificationPermission from '@/components/NotificationPermission';
 import { createClient } from '@/lib/supabase/server';
 
 const notoSansBengali = Noto_Sans_Bengali({
@@ -56,7 +55,6 @@ export default async function RootLayout({ children }) {
       </head>
       <body>
         <AuthProvider>
-          <NotificationPermission />
           <Navbar />
           <AnnouncementPopup message={announcementMessage} />
           {children}

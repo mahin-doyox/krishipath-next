@@ -1,0 +1,33 @@
+import { createClient } from '@/lib/supabase/server';
+import { notFound } from 'next/navigation';
+
+export async function generateMetadata({ params }) {
+  const supabase = await createClient();  // await যোগ করো
+  const { data: blog } = await supabase.from('blogs').select('*').eq('id', params.id).single();
+  if (!blog) return {};
+  return {
+    title: `${blog.title} - কৃষিপথ ব্লগ`,
+    description: blog.content?.slice(0, 160),
+    openGraph: {
+      title: blog.title,
+      description: blog.content?.slice(0, 160),
+    },
+  };
+}
+
+export default async function BlogDetailPage({ params }) {
+  const supabase = await createClient();  // await যোগ করো
+  const { data: blog } = await supabase.from('blogs').select('*').eq('id', params.id).single();
+  if (!blog) notFound();
+
+  return (
+    <div className="container" style={{ padding: '2rem 0' }}>
+      <h2 className="section-title">{blog.title}</h2>
+      <div className="feature-card" style={{ textAlign: 'left' }}>
+        <small>{blog.category} — {blog.user_name}</small>
+        <hr />
+        <div style={{ whiteSpace: 'pre-wrap' }}>{blog.content}</div>
+      </div>
+    </div>
+  );
+}

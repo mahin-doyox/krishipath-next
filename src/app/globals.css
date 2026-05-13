@@ -221,9 +221,89 @@ footer {
    ======================== */
 @media (max-width: 768px) {
   body {
-    padding-bottom: 100px;
+    padding-top: 70px;    /* top bar-এর জন্য */
+    padding-bottom: 85px; /* bottom bar-এর জন্য */
   }
 
+  /* ------- TOP BAR ------- */
+  .navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: auto;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    z-index: 1000;
+    padding: 0.6rem 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .auth-buttons {
+    display: flex;       /* মোবাইলে দেখাবে */
+  }
+
+  .notification-badge {
+    position: static;    /* absolute না */
+  }
+
+  .logo img {
+    height: 38px;
+  }
+
+  .logo-text {
+    font-size: 1.1rem;
+  }
+
+  /* ------- DESKTOP NAV (মোবাইলে আড়াল) ------- */
+  .desktop-nav {
+    display: none;
+  }
+
+  /* ------- MOBILE BOTTOM NAVIGATION ------- */
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    z-index: 1000;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.4rem 2%;
+  }
+
+  .mobile-bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #888;
+    text-decoration: none;
+    padding: 0.3rem 0;
+  }
+
+  .mobile-bottom-nav a.active {
+    color: var(--primary);
+  }
+
+  .mobile-bottom-nav i {
+    font-size: 1.3rem;
+  }
+
+  /* অন্যান্য মোবাইল স্টাইল */
   .hero-image {
     max-height: 250px;
     border-radius: 0 0 30px 30px;
@@ -247,73 +327,8 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  /* ---------- BOTTOM NAVIGATION BAR ---------- */
-  .navbar {
-    position: fixed;
-    bottom: 0;
-    top: auto;
-    left: 0;
-    right: 0;
+  .btn {
     width: 100%;
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(14px);
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-    border-bottom: none;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
-    padding: 0.4rem 2%;
-    display: flex;
-    justify-content: center; /* পুরো বার সেন্টারে */
-    z-index: 1000;
-  }
-
-  .navbar .logo {
-    display: none;
-  }
-
-  .navbar .menu-toggle {
-    display: none;
-  }
-
-  .nav-links {
-    display: flex;
-    flex-direction: row;
-    gap: 0;
-    justify-content: space-around; /* সব আইকন সমান দূরত্বে */
-    width: 100%;
-    max-width: 500px; /* একদম চওড়া না হয়ে সুন্দরভাবে সাজানো */
-    align-items: center;
-  }
-
-  .nav-links a {
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    gap: 4px;
-    color: #888;
-    padding: 0.3rem 0;
-    text-decoration: none;
-    white-space: nowrap;
-    min-width: 50px;
-  }
-
-  .nav-links a.active {
-    color: var(--primary);
-  }
-
-  .nav-links a::after {
-    display: none;
-  }
-
-  .auth-buttons {
-    display: none;
-  }
-
-  .notification-badge {
-    position: absolute;
-    top: -8px;
-    right: 5%;
   }
 }

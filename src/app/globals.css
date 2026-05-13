@@ -252,12 +252,12 @@ footer {
 .flex-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-bottom: 1.5rem; }
 
 /* ========================
-   📱 MOBILE (max-width: 768px)
+   📱 MOBILE + TABLET (max-width: 1024px)
    ======================== */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   body {
     padding-top: 70px;
-    padding-bottom: 85px;
+    padding-bottom: 90px;
   }
 
   /* ---- TOP BAR ---- */
@@ -269,20 +269,20 @@ footer {
     backdrop-filter: blur(14px);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
     z-index: 1000;
-    padding: 0.6rem 5%;
+    padding: 0.8rem 6%;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
   .header-actions { display: flex; align-items: center; gap: 0.8rem; }
   .auth-buttons { display: flex; }
-  .logo img { height: 38px; }
-  .logo-text { font-size: 1.1rem; }
+  .logo img { height: 48px; }
+  .logo-text { font-size: 1.3rem; }
 
-  /* ---- DESKTOP NAV (মোবাইলে আড়াল) ---- */
+  /* ---- DESKTOP NAV (মোবাইল/ট্যাবলেটে আড়াল) ---- */
   .desktop-nav { display: none; }
 
-  /* ---- MOBILE BOTTOM NAV ---- */
+  /* ---- MOBILE BOTTOM NAV (মোবাইল/ট্যাবলেটে চালু) ---- */
   .mobile-bottom-nav {
     display: flex;
     position: fixed;
@@ -293,7 +293,6 @@ footer {
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
     z-index: 1000;
-    display: flex;
     justify-content: space-around;
     align-items: center;
     padding: 0.4rem 2%;
@@ -303,20 +302,20 @@ footer {
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    font-size: 0.7rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: #888;
     text-decoration: none;
     padding: 0.3rem 0;
   }
   .mobile-bottom-nav a.active { color: var(--primary); }
-  .mobile-bottom-nav i { font-size: 1.3rem; }
+  .mobile-bottom-nav i { font-size: 1.5rem; }
 
-  /* ---- OTHER MOBILE STYLES ---- */
-  .hero-image { max-height: 250px; border-radius: 0 0 30px 30px; }
+  /* ---- OTHER MOBILE/TABLET STYLES ---- */
+  .hero-image { max-height: 300px; border-radius: 0 0 30px 30px; }
   .quick-nav-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
-  .quick-nav-card { padding: 1rem 0.5rem; border-radius: 20px; }
-  .quick-nav-card i { font-size: 1.8rem; }
+  .quick-nav-card { padding: 1.2rem 0.8rem; border-radius: 20px; }
+  .quick-nav-card i { font-size: 2rem; }
   .card-grid { grid-template-columns: 1fr; }
   .btn { width: 100%; justify-content: center; }
 }

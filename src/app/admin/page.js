@@ -1,7 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 
 export default function AdminPage() {
   const { user, profile, supabase } = useAuth();
@@ -12,15 +14,25 @@ export default function AdminPage() {
   const [emailMsg, setEmailMsg] = useState('');
   const [announceMsg, setAnnounceMsg] = useState('');
 
+  // Analytics state
+  const [analytics, setAnalytics] = useState(null);
+  const pieChartRef = useRef(null);
+  const barChartRef = useRef(null);
+  const pieInstance = useRef(null);
+  const barInstance = useRef(null);
+
   useEffect(() => {
     if (!user || !profile || profile.role !== 'admin') {
       return router.push('/');
     }
-    // EmailJS ইনিশিয়ালাইজ
     if (typeof window !== 'undefined' && window.emailjs) {
       window.emailjs.init(process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || 'kkVuwDNcE67OyBMZS');
     }
-    loadTabData();
+    if (tab === 'analytics') {
+      loadAnalytics();
+    } else {
+      loadTabData();
+    }
   }, [tab, user, profile]);
 
   const loadTabData = async () => {
@@ -39,6 +51,98 @@ export default function AdminPage() {
       data = d;
     }
     setItems(data || []);
+  };
+
+  const loadAnalytics = async () => {
+    // Basic counts
+    const [
+      { count: totalUsers },
+      { count: totalBlogs },
+      { count: totalProducts },
+      { count: totalQuestions },
+      { count: totalPrices },
+      { data: roleData },
+      { data: priceData }
+    ] = await Promise.all([
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('blogs').select('*', { count: 'exact', head: true }).eq('approved', true),
+      supabase.from('products').select('*', { count: 'exact', head: true }).eq('approved', true),
+      supabase.from('forum_questions').select('*', { count: 'exact', head: true }).eq('approved', true),
+      supabase.from('agent_prices').select('*', { count: 'exact', head: true }).eq('approved', true),
+      supabase.from('profiles').select('role'),
+      supabase.from('agent_prices').select('division, price').eq('approved', true)
+    ]);
+
+    // Role distribution
+    const roleCounts = {};
+    roleData?.forEach(p => {
+      roleCounts[p.role] = (roleCounts[p.role] || 0) + 1;
+    });
+
+    // Average price per division
+    const divisionPrices = {};
+    const divisionCounts = {};
+    priceData?.forEach(p => {
+      if (!divisionPrices[p.division]) {
+        divisionPrices[p.division] = 0;
+        divisionCounts[p.division] = 0;
+      }
+      divisionPrices[p.division] += p.price;
+      divisionCounts[p.division]++;
+    });
+    const avgPriceByDivision = Object.keys(divisionPrices).map(div => ({
+      division: div,
+      avg: Math.round(divisionPrices[div] / divisionCounts[div])
+    }));
+
+    setAnalytics({ totalUsers, totalBlogs, totalProducts, totalQuestions, totalPrices, roleCounts, avgPriceByDivision });
+
+    // Render charts after data is set
+    setTimeout(() => renderCharts(roleCounts, avgPriceByDivision), 100);
+  };
+
+  const renderCharts = (roleCounts, avgPriceByDivision) => {
+    // Pie chart
+    if (pieChartRef.current) {
+      if (pieInstance.current) pieInstance.current.destroy();
+      const ctx = pieChartRef.current.getContext('2d');
+      pieInstance.current = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(roleCounts),
+          datasets: [{
+            data: Object.values(roleCounts),
+            backgroundColor: ['#0d2e1d', '#1b4a30', '#d4a373', '#faedcd', '#64748b']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 14 } } } }
+        }
+      });
+    }
+
+    // Bar chart
+    if (barChartRef.current) {
+      if (barInstance.current) barInstance.current.destroy();
+      const ctx = barChartRef.current.getContext('2d');
+      barInstance.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: avgPriceByDivision.map(d => d.division),
+          datasets: [{
+            label: 'গড় দাম (টাকা)',
+            data: avgPriceByDivision.map(d => d.avg),
+            backgroundColor: '#0d2e1d'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true, title: { display: true, text: 'টাকা' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
   };
 
   const approveItem = async (table, id) => {
@@ -79,6 +183,9 @@ export default function AdminPage() {
     if (!notifMsg) return alert('মেসেজ লিখুন');
     const { data: profiles } = await supabase.from('profiles').select('id');
     if (profiles) for (let p of profiles) await supabase.from('notifications').insert([{ user_id: p.id, message: '🔔 অ্যাডমিন: ' + notifMsg }]);
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification('কৃষিপথ', { body: '🔔 অ্যাডমিন: ' + notifMsg, icon: 'https://i.ibb.co.com/N2fHrxQd/Screenshot-2026-05-09-1-50-43-PM-removebg-preview.png' });
+    }
     alert('সকলকে নোটিফিকেশন পাঠানো হয়েছে');
     setNotifMsg('');
   };
@@ -91,11 +198,7 @@ export default function AdminPage() {
     for (let u of users) {
       if (!u.email) continue;
       try {
-        await window.emailjs.send('service_d8fivoo', 'template_ftfnh5r', {
-          to_email: u.email,
-          to_name: u.name || 'কৃষিপথ সদস্য',
-          message: emailMsg
-        });
+        await window.emailjs.send('service_d8fivoo', 'template_ftfnh5r', { to_email: u.email, to_name: u.name || 'কৃষিপথ সদস্য', message: emailMsg });
         count++;
       } catch (e) {}
     }
@@ -115,58 +218,103 @@ export default function AdminPage() {
     <div className="container" style={{ padding: '2rem 0' }}>
       <h2 className="section-title">অ্যাডমিন প্যানেল</h2>
       <div className="admin-tabs">
-        {['blog','products','prices','answers','notification','email','announcement'].map(t => (
+        {['blog','products','prices','answers','notification','email','announcement','analytics'].map(t => (
           <button key={t} className={`admin-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {t === 'blog' ? 'ব্লগ' : t === 'products' ? 'পণ্য' : t === 'prices' ? 'বাজার দর' : t === 'answers' ? 'ফোরাম উত্তর' : t === 'notification' ? '🔔 নোটিফিকেশন' : t === 'email' ? '📧 ইমেইল' : '📢 ঘোষণা'}
+            {t === 'blog' ? 'ব্লগ' : t === 'products' ? 'পণ্য' : t === 'prices' ? 'বাজার দর' : t === 'answers' ? 'ফোরাম উত্তর' : t === 'notification' ? '🔔 নোটিফিকেশন' : t === 'email' ? '📧 ইমেইল' : t === 'announcement' ? '📢 ঘোষণা' : '📊 অ্যানালিটিক্স'}
           </button>
         ))}
       </div>
-      <div>
-        {['blog','products','prices'].includes(tab) && items.map(item => (
-          <div key={item.id} className="pending-item">
-            <div>
-              {tab === 'blog' && <><strong>{item.title}</strong> ({item.category}) by {item.user_name}</>}
-              {tab === 'products' && <><strong>{item.name}</strong> by {item.user_name}</>}
-              {tab === 'prices' && <>{item.division} → {item.district} → {item.upazila} → {item.area}, <strong>{item.crop}</strong>: {item.price} টাকা by {item.user_name}</>}
+
+      {tab === 'analytics' ? (
+        <div>
+          {analytics ? (
+            <>
+              <div className="dashboard-grid">
+                <div className="stat-card">
+                  <h3>মোট ইউজার</h3>
+                  <div className="value">{analytics.totalUsers}</div>
+                </div>
+                <div className="stat-card">
+                  <h3>মোট ব্লগ</h3>
+                  <div className="value">{analytics.totalBlogs}</div>
+                </div>
+                <div className="stat-card">
+                  <h3>মোট পণ্য</h3>
+                  <div className="value">{analytics.totalProducts}</div>
+                </div>
+                <div className="stat-card">
+                  <h3>মোট প্রশ্ন</h3>
+                  <div className="value">{analytics.totalQuestions}</div>
+                </div>
+                <div className="stat-card">
+                  <h3>মোট দর</h3>
+                  <div className="value">{analytics.totalPrices}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
+                <div className="chart-container" style={{ padding: '1.5rem' }}>
+                  <h3 style={{ textAlign: 'center', marginBottom: '1rem' }}>ইউজার রোল বিতরণ</h3>
+                  <canvas ref={pieChartRef}></canvas>
+                </div>
+                <div className="chart-container" style={{ padding: '1.5rem' }}>
+                  <h3 style={{ textAlign: 'center', marginBottom: '1rem' }}>বিভাগ অনুযায়ী গড় দাম</h3>
+                  <canvas ref={barChartRef}></canvas>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p>লোড হচ্ছে...</p>
+          )}
+        </div>
+      ) : (
+        <div>
+          {['blog','products','prices'].includes(tab) && items.map(item => (
+            <div key={item.id} className="pending-item">
+              <div>
+                {tab === 'blog' && <><strong>{item.title}</strong> ({item.category}) by {item.user_name}</>}
+                {tab === 'products' && <><strong>{item.name}</strong> by {item.user_name}</>}
+                {tab === 'prices' && <>{item.division} → {item.district} → {item.upazila} → {item.area}, <strong>{item.crop}</strong>: {item.price} টাকা by {item.user_name}</>}
+              </div>
+              <div>
+                <button className="btn btn-primary btn-sm" onClick={() => approveItem(tab === 'blog' ? 'blogs' : tab === 'products' ? 'products' : 'agent_prices', item.id)}>অনুমোদন</button>
+                <button className="btn btn-outline btn-sm" onClick={() => cancelItem(tab === 'blog' ? 'blogs' : tab === 'products' ? 'products' : 'agent_prices', item.id)}>বাতিল</button>
+              </div>
             </div>
-            <div>
-              <button className="btn btn-primary btn-sm" onClick={() => approveItem(tab === 'blog' ? 'blogs' : tab === 'products' ? 'products' : 'agent_prices', item.id)}>অনুমোদন</button>
-              <button className="btn btn-outline btn-sm" onClick={() => cancelItem(tab === 'blog' ? 'blogs' : tab === 'products' ? 'products' : 'agent_prices', item.id)}>বাতিল</button>
+          ))}
+          {tab === 'answers' && items.map(item => (
+            <div key={item.id} className="pending-item">
+              <div><strong>উত্তর:</strong> {item.answer?.substring(0,100)}... <small>দ্বারা {item.user_name}</small></div>
+              <div>
+                <button className="btn btn-primary btn-sm" onClick={() => approveAnswer(item.id)}>অনুমোদন</button>
+                <button className="btn btn-outline btn-sm" onClick={() => cancelItem('forum_answers', item.id)}>বাতিল</button>
+              </div>
             </div>
-          </div>
-        ))}
-        {tab === 'answers' && items.map(item => (
-          <div key={item.id} className="pending-item">
-            <div><strong>উত্তর:</strong> {item.answer?.substring(0,100)}... <small>দ্বারা {item.user_name}</small></div>
-            <div>
-              <button className="btn btn-primary btn-sm" onClick={() => approveAnswer(item.id)}>অনুমোদন</button>
-              <button className="btn btn-outline btn-sm" onClick={() => cancelItem('forum_answers', item.id)}>বাতিল</button>
+          ))}
+          {tab === 'notification' && (
+            <div className="form-card">
+              <h3>🔔 সকলকে নোটিফিকেশন পাঠান</h3>
+              <textarea className="form-control" value={notifMsg} onChange={e => setNotifMsg(e.target.value)} placeholder="মেসেজ"></textarea>
+              <button className="btn btn-primary w-100 mt-3" onClick={sendAdminNotification}>পাঠান</button>
             </div>
-          </div>
-        ))}
-        {tab === 'notification' && (
-          <div className="form-card">
-            <h3>🔔 সকলকে নোটিফিকেশন পাঠান</h3>
-            <textarea className="form-control" value={notifMsg} onChange={e => setNotifMsg(e.target.value)} placeholder="মেসেজ"></textarea>
-            <button className="btn btn-primary w-100 mt-3" onClick={sendAdminNotification}>পাঠান</button>
-          </div>
-        )}
-        {tab === 'email' && (
-          <div className="form-card">
-            <h3>📧 সকলকে ইমেইল পাঠান</h3>
-            <textarea className="form-control" value={emailMsg} onChange={e => setEmailMsg(e.target.value)} placeholder="মেসেজ"></textarea>
-            <button className="btn btn-primary w-100 mt-3" onClick={sendEmailToAll}>ইমেইল পাঠান</button>
-          </div>
-        )}
-        {tab === 'announcement' && (
-          <div className="form-card">
-            <h3>📢 পপ-আপ ঘোষণা</h3>
-            <textarea className="form-control" value={announceMsg} onChange={e => setAnnounceMsg(e.target.value)} placeholder="মেসেজ"></textarea>
-            <button className="btn btn-primary w-100 mt-3" onClick={createAnnouncement}>পোস্ট করুন</button>
-          </div>
-        )}
-        {['blog','products','prices','answers'].includes(tab) && items.length === 0 && <p>কোনো পেন্ডিং নেই</p>}
-      </div>
+          )}
+          {tab === 'email' && (
+            <div className="form-card">
+              <h3>📧 সকলকে ইমেইল পাঠান</h3>
+              <textarea className="form-control" value={emailMsg} onChange={e => setEmailMsg(e.target.value)} placeholder="মেসেজ"></textarea>
+              <button className="btn btn-primary w-100 mt-3" onClick={sendEmailToAll}>ইমেইল পাঠান</button>
+            </div>
+          )}
+          {tab === 'announcement' && (
+            <div className="form-card">
+              <h3>📢 পপ-আপ ঘোষণা</h3>
+              <textarea className="form-control" value={announceMsg} onChange={e => setAnnounceMsg(e.target.value)} placeholder="মেসেজ"></textarea>
+              <button className="btn btn-primary w-100 mt-3" onClick={createAnnouncement}>পোস্ট করুন</button>
+            </div>
+          )}
+          {['blog','products','prices','answers'].includes(tab) && items.length === 0 && <p>কোনো পেন্ডিং নেই</p>}
+        </div>
+      )}
     </div>
   );
 }

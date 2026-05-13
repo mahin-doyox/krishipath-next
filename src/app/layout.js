@@ -47,6 +47,7 @@ export default async function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
+            <link rel="manifest" href="/manifest.json" />
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"

@@ -4,7 +4,7 @@ export default function HomePage() {
   return (
     <main>
       <section className="hero">
-        <img className="hero-image" src="https://i.ibb.co.com/tPMYJzkC/Add-Text-05-09-11-01-49.png" alt="কৃষিপথ ব্যানার" />
+        <img className="hero-image" src="/hero.png" alt="কৃষিপথ ব্যানার" />
         <div className="hero-container">
           <div className="hero-text">
             <h1>কৃষির ডিজিটাল <span style={{ color: 'var(--gold)', borderBottom: '4px dotted var(--gold-light)' }}>পথচলা</span><br />এখন শুরু</h1>

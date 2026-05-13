@@ -28,7 +28,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="logo" onClick={() => window.location.href = '/'}>
-        <img src="https://i.ibb.co.com/N2fHrxQd/Screenshot-2026-05-09-1-50-43-PM-removebg-preview.png" alt="কৃষিপথ লোগো" />
+        <img src="/logo.png" alt="কৃষিপথ লোগো" />
         <div className="logo-text">কৃষিপথ <span>• krishipath</span></div>
       </div>
       <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>

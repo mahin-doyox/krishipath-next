@@ -1,14 +1,46 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
-import NotificationDropdown from './NotificationDropdown';
 
 export default function Navbar() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, supabase } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
   const pathname = usePathname();
+
+  // নোটিফিকেশন কাউন্ট আপডেট
+  useEffect(() => {
+    if (!user) return;
+
+    const getCount = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false);
+      setNotifCount(count || 0);
+    };
+    getCount();
+
+    // রিয়েল-টাইম কাউন্ট বৃদ্ধি
+    const channel = supabase
+      .channel('notif-count')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => setNotifCount((prev) => prev + 1)
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [user, supabase]);
 
   const handleLogout = async () => {
     await signOut();
@@ -54,7 +86,19 @@ export default function Navbar() {
                 অ্যাডমিন
               </Link>
             )}
-            <NotificationDropdown />
+            {/* সিম্পল নোটিফিকেশন বেল */}
+            <div
+              className="notification-badge"
+              onClick={() => (window.location.href = '/profile')}
+              style={{ cursor: 'pointer' }}
+            >
+              <i className="fas fa-bell" style={{ fontSize: '1.4rem', color: 'var(--primary)' }}></i>
+              {notifCount > 0 && (
+                <span className="count" style={{ display: 'flex' }}>
+                  {notifCount}
+                </span>
+              )}
+            </div>
           </>
         )}
         <div className="auth-buttons">

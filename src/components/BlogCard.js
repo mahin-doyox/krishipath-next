@@ -7,7 +7,7 @@ export default function BlogCard({ blog }) {
         <h4>{blog.title}</h4>
       </Link>
       <small>{blog.category} — {blog.user_name}</small>
-      <div style={{ whiteSpace: 'pre-wrap', marginTop: '1rem' }}>{blog.content?.slice(0, 200)}{blog.content?.length > 200 ? '...' : ''}</div>
+      <div style={{ whiteSpace: 'pre-wrap', marginTop: '1rem' }}>{blog.content}</div>
     </div>
   );
 }

@@ -16,8 +16,12 @@ export default function AdminPage() {
     if (!user || !profile || profile.role !== 'admin') {
       return router.push('/');
     }
+    // EmailJS ইনিশিয়ালাইজ
+    if (typeof window !== 'undefined' && window.emailjs) {
+      window.emailjs.init(process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || 'kkVuwDNcE67OyBMZS');
+    }
     loadTabData();
-  }, [tab]);
+  }, [tab, user, profile]);
 
   const loadTabData = async () => {
     let data = [];
@@ -75,7 +79,7 @@ export default function AdminPage() {
     if (!notifMsg) return alert('মেসেজ লিখুন');
     const { data: profiles } = await supabase.from('profiles').select('id');
     if (profiles) for (let p of profiles) await supabase.from('notifications').insert([{ user_id: p.id, message: '🔔 অ্যাডমিন: ' + notifMsg }]);
-    alert('সকলকে পাঠানো হয়েছে');
+    alert('সকলকে নোটিফিকেশন পাঠানো হয়েছে');
     setNotifMsg('');
   };
 
@@ -87,8 +91,11 @@ export default function AdminPage() {
     for (let u of users) {
       if (!u.email) continue;
       try {
-        // EmailJS ব্যবহার (ক্লায়েন্ট সাইড)
-        await window.emailjs.send('service_d8fivoo', 'template_ftfnh5r', { to_email: u.email, to_name: u.name || 'কৃষিপথ সদস্য', message: emailMsg });
+        await window.emailjs.send('service_d8fivoo', 'template_ftfnh5r', {
+          to_email: u.email,
+          to_name: u.name || 'কৃষিপথ সদস্য',
+          message: emailMsg
+        });
         count++;
       } catch (e) {}
     }

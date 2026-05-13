@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  turbopack: false,   // <-- নতুন লাইন
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'uskcutjjmtcbgezcfbfm.supabase.co',
+      },
+    ],
+  },
 };
-
 export default nextConfig;

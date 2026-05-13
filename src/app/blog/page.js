@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import BlogFilterClient from './BlogFilterClient'; // ক্লায়েন্ট কম্পোনেন্ট
+import BlogFilterClient from './BlogFilterClient';
 
 export const metadata = {
   title: 'কৃষি ব্লগ - কৃষিপথ',
@@ -7,8 +7,12 @@ export const metadata = {
 };
 
 export default async function BlogPage() {
-  const supabase = await createClient();  // await যোগ করো
-  const { data: blogs } = await supabase.from('blogs').select('*').eq('approved', true).order('created_at', { ascending: false });
+  const supabase = await createClient();
+  const { data: blogs } = await supabase
+    .from('blogs')
+    .select('*')
+    .eq('approved', true)
+    .order('created_at', { ascending: false });
 
   return (
     <div className="container" style={{ padding: '2rem 0' }}>

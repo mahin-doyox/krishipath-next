@@ -16,8 +16,8 @@ body {
   --gold-light: #faedcd;
   --white: #ffffff;
   --gray-bg: #f8faf5;
-  --shadow-sm: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
-  --shadow-md: 0 20px 30px -10px rgba(0,0,0,0.08), 0 10px 15px -8px rgba(0,0,0,0.05);
+  --shadow-sm: 0 10px 25px -5px rgba(0,0,0,0.05),0 8px 10px -6px rgba(0,0,0,0.02);
+  --shadow-md: 0 20px 30px -10px rgba(0,0,0,0.08),0 10px 15px -8px rgba(0,0,0,0.05);
   --shadow-lg: 0 30px 40px -15px rgba(0,0,0,0.12);
 }
 @keyframes fadeUp {
@@ -187,7 +187,11 @@ h1, h2, h3 {
   font-weight: 700;
 }
 .page {
+  display: none;
   animation: fadeUp 0.4s;
+}
+.page.active {
+  display: block;
 }
 .card-grid {
   display: grid;
@@ -489,4 +493,7 @@ footer {
   flex-wrap: wrap;
   align-items: center;
   margin-bottom: 2rem;
+}
+.btn.btn-primary {
+  color: white !important;
 }

@@ -96,7 +96,7 @@ h1, h2, h3 {
 }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 
-/* ------ LOGO (ক্লিন, কোনো বর্ডার/শ্যাডো নেই) ------ */
+/* ------ LOGO (DESKTOP) ------ */
 .logo img {
   height: 44px;
   width: auto;
@@ -279,7 +279,7 @@ footer {
     backdrop-filter: blur(14px);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
     z-index: 1000;
-    padding: 0.8rem 6%;
+    padding: 0.6rem 4%;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -287,23 +287,28 @@ footer {
   .header-actions { display: flex; align-items: center; gap: 0.8rem; }
   .auth-buttons { display: flex; }
 
-  /* ------ MOBILE LOGO (ক্লিন) ------ */
+  /* ------ MOBILE LOGO (ক্লিন, একটু ছোট) ------ */
   .logo img {
     height: auto;
-    width: 120px;
-    max-height: 48px;
+    width: 80px;           /* আগে 120px ছিল, কমিয়ে 80px */
+    max-height: 40px;
     object-fit: contain;
     border: none;
     border-radius: 0;
     box-shadow: none;
   }
 
-  .logo-text { font-size: 1.3rem; }
+  .logo-text {
+    font-size: 1rem;       /* আগের 1.3rem থেকে কমিয়ে */
+  }
+  .logo-text span {
+    display: none;         /* "• krishipath" সরিয়ে দিচ্ছি, শুধু "কৃষিপথ" থাকবে */
+  }
 
   /* ---- DESKTOP NAV (মোবাইল/ট্যাবলেটে আড়াল) ---- */
   .desktop-nav { display: none; }
 
-  /* ---- MOBILE BOTTOM NAV (মোবাইল/ট্যাবলেটে চালু) ---- */
+  /* ---- MOBILE BOTTOM NAV ---- */
   .mobile-bottom-nav {
     display: flex;
     position: fixed;

@@ -95,7 +95,17 @@ h1, h2, h3 {
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.logo img { height: 44px; border-radius: 50%; border: 2px solid white; box-shadow: var(--shadow-sm); }
+
+/* ------ LOGO (ক্লিন, কোনো বর্ডার/শ্যাডো নেই) ------ */
+.logo img {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .logo-text { font-weight: 800; font-size: 1.3rem; color: var(--primary); }
 .logo-text span { color: var(--gold); }
 .header-actions { display: flex; align-items: center; gap: 0.8rem; }
@@ -276,7 +286,18 @@ footer {
   }
   .header-actions { display: flex; align-items: center; gap: 0.8rem; }
   .auth-buttons { display: flex; }
-  .logo img { height: 48px; }
+
+  /* ------ MOBILE LOGO (ক্লিন) ------ */
+  .logo img {
+    height: auto;
+    width: 120px;
+    max-height: 48px;
+    object-fit: contain;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
   .logo-text { font-size: 1.3rem; }
 
   /* ---- DESKTOP NAV (মোবাইল/ট্যাবলেটে আড়াল) ---- */

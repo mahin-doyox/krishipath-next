@@ -36,18 +36,14 @@ export default async function RootLayout({ children }) {
     <html lang="bn" className={notoSansBengali.variable}>
       <head>
         <meta name="theme-color" content="#0d2e1d" />
-        <link
-          rel="icon"
-          type="image/png"
-          href="https://i.ibb.co.com/N2fHrxQd/Screenshot-2026-05-09-1-50-43-PM-removebg-preview.png"
-        />
+        <link rel="icon" type="image/png" href="/icon-192.png" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
         <link
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
-            <link rel="manifest" href="/manifest.json" />
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"

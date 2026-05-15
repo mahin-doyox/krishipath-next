@@ -42,7 +42,6 @@ export default function PricesClient() {
 
   // ---------------- Watchlist State ----------------
   const [watchlist, setWatchlist] = useState([]);
-  const [showWatchlist, setShowWatchlist] = useState(false);
 
   // ---------------- Agent Upload Form State ----------------
   const [agentDiv, setAgentDiv] = useState('');
@@ -107,14 +106,14 @@ export default function PricesClient() {
     } else { setCrops([]); setCrop(''); }
   }, [div, dist, upaz, area, supabase]);
 
-  // Fetch all available crops for comparison
+  // Fetch all available crops for comparison/regional
   useEffect(() => {
     supabase.from('agent_prices').select('crop', { distinct: true }).eq('approved', true)
       .then(({ data }) => { if (data) setCompareCrops([...new Set(data.map(c => c.crop).filter(Boolean))]); });
   }, [supabase]);
 
   // ============================================
-  //  TREND CHART (Timeframe + Moving Average)
+  //  TREND CHART (Timeframe + Moving Average) + Stats
   // ============================================
   const buildTrendChart = async () => {
     if (!crop || !area) return;
@@ -131,12 +130,25 @@ export default function PricesClient() {
       .order('created_at', { ascending: true });
 
     if (!data || data.length === 0) {
+      setStats({ current: 'N/A', max: 'N/A', min: 'N/A', avg: 'N/A', trend: '' });
       if (trendInstance.current) trendInstance.current.destroy();
       return;
     }
 
     const prices = data.map(d => d.price);
     const labels = data.map(d => new Date(d.created_at).toLocaleDateString('bn-BD'));
+
+    // Compute stats
+    const current = prices[prices.length - 1];
+    const max = Math.max(...prices);
+    const min = Math.min(...prices);
+    const avg = (prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(2);
+    let trend = '';
+    if (prices.length >= 2) {
+      const diff = prices[prices.length - 1] - prices[prices.length - 2];
+      trend = diff > 0 ? '📈 বাড়ছে' : diff < 0 ? '📉 কমছে' : '⏺️ স্থিতিশীল';
+    }
+    setStats({ current: `${current} টাকা/কেজি`, max: `${max} টাকা`, min: `${min} টাকা`, avg: `${avg} টাকা`, trend });
 
     // 7-day moving average
     const ma = [];
@@ -189,7 +201,7 @@ export default function PricesClient() {
   // ============================================
   const buildComparisonChart = async () => {
     if (!compareCrop || !area) return;
-    const primaryCrop = crop || compareCrop; // use dashboard crop if available, else compare crop
+    const primaryCrop = crop || compareCrop;
 
     const { data } = await supabase
       .from('agent_prices')
@@ -205,11 +217,10 @@ export default function PricesClient() {
       return;
     }
 
-    // Group by crop + date
     const map = {};
     data.forEach(d => {
       const date = new Date(d.created_at).toLocaleDateString('bn-BD');
-      if (!map[date]) map[date] = {};
+      if (!map[date]) map[date] = { [primaryCrop]: 0, [compareCrop]: 0, [`${primaryCrop}_count`]: 0, [`${compareCrop}_count`]: 0 };
       map[date][d.crop] = (map[date][d.crop] || 0) + d.price;
       map[date][`${d.crop}_count`] = (map[date][`${d.crop}_count`] || 0) + 1;
     });
@@ -417,8 +428,8 @@ export default function PricesClient() {
         <>
           <div className="dashboard-grid">
             <div className="stat-card"><h3>বর্তমান মূল্য</h3><div className="value">{stats.current}</div><div className="trend">{stats.trend}</div></div>
-            <div className="stat-card"><h3>সর্বোচ্চ</h3><div className="value">{stats.max}</div></div>
-            <div className="stat-card"><h3>সর্বনিম্ন</h3><div className="value">{stats.min}</div></div>
+            <div className="stat-card"><h3>সর্বোচ্চ (সাম্প্রতিক)</h3><div className="value">{stats.max}</div></div>
+            <div className="stat-card"><h3>সর্বনিম্ন (সাম্প্রতিক)</h3><div className="value">{stats.min}</div></div>
             <div className="stat-card"><h3>গড় মূল্য</h3><div className="value">{stats.avg}</div></div>
           </div>
 
@@ -439,7 +450,7 @@ export default function PricesClient() {
             <h3>🔄 ফসলের তুলনা</h3>
             <div className="flex-row" style={{ marginTop: '0.5rem' }}>
               <select value={compareCrop} onChange={e => setCompareCrop(e.target.value)} className="form-control" style={{ maxWidth: '200px' }}>
-                <option value="">ফসল বাছুন</option>
+                <option value="">তুলনা করতে ফসল বাছুন</option>
                 {compareCrops.filter(c => c !== crop).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -458,25 +469,21 @@ export default function PricesClient() {
             {regionalCrop && regionalData && (
               <div style={{ marginTop: '1rem' }}>
                 <p style={{ marginBottom: '0.5rem', fontWeight: 600 }}>
-                  {regionalData.values.indexOf(Math.max(...regionalData.values)) >= 0 &&
-                    `📌 সর্বোচ্চ: ${regionalData.labels[regionalData.values.indexOf(Math.max(...regionalData.values))]} (${Math.max(...regionalData.values)} টাকা) | `}
-                  {regionalData.values.indexOf(Math.min(...regionalData.values)) >= 0 &&
-                    `সর্বনিম্ন: ${regionalData.labels[regionalData.values.indexOf(Math.min(...regionalData.values))]} (${Math.min(...regionalData.values)} টাকা)`}
+                  📌 সর্বোচ্চ: {regionalData.labels[regionalData.values.indexOf(Math.max(...regionalData.values))]} ({Math.max(...regionalData.values)} টাকা) | 
+                  সর্বনিম্ন: {regionalData.labels[regionalData.values.indexOf(Math.min(...regionalData.values))]} ({Math.min(...regionalData.values)} টাকা)
                 </p>
                 <canvas ref={regionalChartRef}></canvas>
               </div>
             )}
           </div>
-        </>
-      )}
 
-      {/* ---------- SUMMARY (Mobile friendly) ---------- */}
-      {showDashboard && stats.current !== '--' && (
-        <div className="feature-card" style={{ textAlign: 'left', marginTop: '1rem' }}>
-          <h4>📋 আজকের সারসংক্ষেপ</h4>
-          <p><strong>{crop}</strong> ({area}, {upazila}, {dist}): <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{stats.current}</span></p>
-          {stats.trend && <p>📊 প্রবণতা: {stats.trend}</p>}
-        </div>
+          {/* ---------- SUMMARY ---------- */}
+          <div className="feature-card" style={{ textAlign: 'left', marginTop: '1rem' }}>
+            <h4>📋 আজকের সারসংক্ষেপ</h4>
+            <p><strong>{crop}</strong> ({area}, {upazila}, {dist}): <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{stats.current}</span></p>
+            {stats.trend && <p>📊 প্রবণতা: {stats.trend}</p>}
+          </div>
+        </>
       )}
     </>
   );

@@ -13,7 +13,7 @@ export default function PricesClient() {
   // ---------------- Dashboard Filters ----------------
   const [div, setDiv] = useState('');
   const [dist, setDist] = useState('');
-  const [upaz, setUpaz] = useState('');
+  const [upaz, setUpaz] = useState('');                // state name is 'upaz'
   const [area, setArea] = useState('');
   const [crop, setCrop] = useState('');
   const [areas, setAreas] = useState([]);
@@ -74,17 +74,18 @@ export default function PricesClient() {
   };
 
   const toggleWatchlist = (item) => {
-    const key = `${item.division}|${item.district}|${item.upazila}|${item.area}|${item.crop}`;
-    if (watchlist.find(w => `${w.division}|${w.district}|${w.upazila}|${w.area}|${w.crop}` === key)) {
-      saveWatchlist(watchlist.filter(w => `${w.division}|${w.district}|${w.upazila}|${w.area}|${w.crop}` !== key));
+    // item: { division, district, upaz, area, crop }   <-- same keys
+    const key = `${item.division}|${item.district}|${item.upaz}|${item.area}|${item.crop}`;
+    if (watchlist.find(w => `${w.division}|${w.district}|${w.upaz}|${w.area}|${w.crop}` === key)) {
+      saveWatchlist(watchlist.filter(w => `${w.division}|${w.district}|${w.upaz}|${w.area}|${w.crop}` !== key));
     } else {
       saveWatchlist([...watchlist, item]);
     }
   };
 
   const isInWatchlist = (item) => {
-    const key = `${item.division}|${item.district}|${item.upazila}|${item.area}|${item.crop}`;
-    return watchlist.some(w => `${w.division}|${w.district}|${w.upazila}|${w.area}|${w.crop}` === key);
+    const key = `${item.division}|${item.district}|${item.upaz}|${item.area}|${item.crop}`;
+    return watchlist.some(w => `${w.division}|${w.district}|${w.upaz}|${w.area}|${w.crop}` === key);
   };
 
   // ============================================
@@ -124,7 +125,7 @@ export default function PricesClient() {
     const { data } = await supabase
       .from('agent_prices')
       .select('*')
-      .eq('division', div).eq('district', dist).eq('upazila', upaz)
+      .eq('division', div).eq('district', dist).eq('upazila', upaz)    // upaz state used
       .eq('area', area).eq('crop', crop).eq('approved', true)
       .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: true });
@@ -138,7 +139,6 @@ export default function PricesClient() {
     const prices = data.map(d => d.price);
     const labels = data.map(d => new Date(d.created_at).toLocaleDateString('bn-BD'));
 
-    // Compute stats
     const current = prices[prices.length - 1];
     const max = Math.max(...prices);
     const min = Math.min(...prices);
@@ -437,8 +437,8 @@ export default function PricesClient() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3>📈 মূল্য প্রবণতা</h3>
               {crop && (
-                <button className="btn btn-outline btn-sm" onClick={() => toggleWatchlist({ division: div, district: dist, upazila, area, crop })}>
-                  {isInWatchlist({ division: div, district: dist, upazila, area, crop }) ? '⭐ পছন্দ থেকে সরান' : '☆ পছন্দসই যোগ করুন'}
+                <button className="btn btn-outline btn-sm" onClick={() => toggleWatchlist({ division: div, district: dist, upaz, area, crop })}>
+                  {isInWatchlist({ division: div, district: dist, upaz, area, crop }) ? '⭐ পছন্দ থেকে সরান' : '☆ পছন্দসই যোগ করুন'}
                 </button>
               )}
             </div>
@@ -480,7 +480,7 @@ export default function PricesClient() {
           {/* ---------- SUMMARY ---------- */}
           <div className="feature-card" style={{ textAlign: 'left', marginTop: '1rem' }}>
             <h4>📋 আজকের সারসংক্ষেপ</h4>
-            <p><strong>{crop}</strong> ({area}, {upazila}, {dist}): <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{stats.current}</span></p>
+            <p><strong>{crop}</strong> ({area}, {upaz}, {dist}): <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{stats.current}</span></p>
             {stats.trend && <p>📊 প্রবণতা: {stats.trend}</p>}
           </div>
         </>

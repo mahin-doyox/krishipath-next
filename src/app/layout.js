@@ -36,7 +36,7 @@ export default async function RootLayout({ children }) {
     <html lang="bn" className={notoSansBengali.variable}>
       <head>
         <meta name="theme-color" content="#0d2e1d" />
-        <link rel="icon" type="image/png" href="/icon-192.png" />
+        <link rel="icon" type="image/png" href="https://i.ibb.co.com/N2fHrxQd/Screenshot-2026-05-09-1-50-43-PM-removebg-preview.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import AnswerModal from '@/components/AnswerModal';
 import Link from 'next/link';
+import { getRelativeTime } from '@/lib/relativeTime';
 
 export default function ForumClient({ questions }) {
   const { user, profile, supabase } = useAuth();
@@ -13,14 +14,12 @@ export default function ForumClient({ questions }) {
   const [likeCounts, setLikeCounts] = useState({});
   const [userLikes, setUserLikes] = useState({});
   const [modalQId, setModalQId] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(''); // নতুন: সার্চ টার্ম
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // প্রশ্ন লোড
   useEffect(() => {
     setData(questions);
   }, [questions]);
 
-  // উত্তর ও লাইক লোড (আগের মতো)
   useEffect(() => {
     questions.forEach(async (q) => {
       const { data: ans } = await supabase
@@ -53,7 +52,6 @@ export default function ForumClient({ questions }) {
     });
   }, [questions, user, supabase]);
 
-  // রিয়েল-টাইম লাইক সাবস্ক্রিপশন (আগের মতো)
   useEffect(() => {
     const channel = supabase
       .channel('answer-likes')
@@ -107,7 +105,6 @@ export default function ForumClient({ questions }) {
     }
   };
 
-  // সার্চ ফিল্টারিং: title বা body-তে searchTerm উপস্থিত থাকলে দেখাবে
   const filteredQuestions = searchTerm.trim()
     ? data.filter(q =>
         q.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,7 +114,6 @@ export default function ForumClient({ questions }) {
 
   return (
     <>
-      {/* নতুন: সার্চ ইনপুট */}
       <div className="form-card" style={{ marginBottom: '1.5rem' }}>
         <input
           type="text"
@@ -150,13 +146,13 @@ export default function ForumClient({ questions }) {
         <div key={q.id} className="feature-card" style={{ textAlign: 'left' }}>
           <h4>{q.title}</h4>
           <p style={{ whiteSpace: 'pre-wrap' }}>{q.body}</p>
-          <small>— {q.user_name}</small>
+          <small>— {q.user_name} • {getRelativeTime(q.created_at)}</small>
           <div className="mt-3">
             <strong>উত্তর ({(answersMap[q.id] || []).length}):</strong>
             {(answersMap[q.id] || []).map(a => (
               <div key={a.id} style={{ marginBottom: '0.8rem', padding: '0.5rem', background: '#f8faf5', borderRadius: '12px' }}>
                 <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{a.answer}</p>
-                <small>— {a.user_name}</small>
+                <small>— {a.user_name} • {getRelativeTime(a.created_at)}</small>
                 <div style={{ marginTop: '0.3rem' }}>
                   <button
                     className={`btn btn-sm ${userLikes[a.id] ? 'btn-primary' : 'btn-outline'}`}

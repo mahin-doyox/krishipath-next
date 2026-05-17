@@ -2,9 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 
 export async function generateMetadata({ params }) {
-  const supabase = await createClient();  // await যোগ করো
+  const supabase = await createClient();
   const { data: blog } = await supabase.from('blogs').select('*').eq('id', params.id).single();
-  if (!blog) return {};
+  if (!blog) return { title: 'ব্লগ পাওয়া যায়নি' };
   return {
     title: `${blog.title} - কৃষিপথ ব্লগ`,
     description: blog.content?.slice(0, 160),
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function BlogDetailPage({ params }) {
-  const supabase = await createClient();  // await যোগ করো
+  const supabase = await createClient();
   const { data: blog } = await supabase.from('blogs').select('*').eq('id', params.id).single();
   if (!blog) notFound();
 

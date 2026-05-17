@@ -10,16 +10,17 @@ export default function ForumClient({ questions }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [answersMap, setAnswersMap] = useState({});
-  const [likeCounts, setLikeCounts] = useState({});   // answer_id -> count
-  const [userLikes, setUserLikes] = useState({});      // answer_id -> boolean
+  const [likeCounts, setLikeCounts] = useState({});
+  const [userLikes, setUserLikes] = useState({});
   const [modalQId, setModalQId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(''); // নতুন: সার্চ টার্ম
 
   // প্রশ্ন লোড
   useEffect(() => {
     setData(questions);
   }, [questions]);
 
-  // উত্তর ও লাইক লোড
+  // উত্তর ও লাইক লোড (আগের মতো)
   useEffect(() => {
     questions.forEach(async (q) => {
       const { data: ans } = await supabase
@@ -31,7 +32,6 @@ export default function ForumClient({ questions }) {
       setAnswersMap((prev) => ({ ...prev, [q.id]: ans || [] }));
 
       ans?.forEach((a) => {
-        // লাইক কাউন্ট
         supabase
           .from('likes')
           .select('*', { count: 'exact', head: true })
@@ -39,7 +39,6 @@ export default function ForumClient({ questions }) {
           .eq('item_id', a.id)
           .then(({ count }) => setLikeCounts((prev) => ({ ...prev, [a.id]: count || 0 })));
 
-        // ইউজার লাইক স্ট্যাটাস
         if (user) {
           supabase
             .from('likes')
@@ -54,7 +53,7 @@ export default function ForumClient({ questions }) {
     });
   }, [questions, user, supabase]);
 
-  // রিয়েল-টাইম
+  // রিয়েল-টাইম লাইক সাবস্ক্রিপশন (আগের মতো)
   useEffect(() => {
     const channel = supabase
       .channel('answer-likes')
@@ -108,8 +107,32 @@ export default function ForumClient({ questions }) {
     }
   };
 
+  // সার্চ ফিল্টারিং: title বা body-তে searchTerm উপস্থিত থাকলে দেখাবে
+  const filteredQuestions = searchTerm.trim()
+    ? data.filter(q =>
+        q.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        q.body?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : data;
+
   return (
     <>
+      {/* নতুন: সার্চ ইনপুট */}
+      <div className="form-card" style={{ marginBottom: '1.5rem' }}>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="🔍 প্রশ্ন খুঁজুন (বিষয় বা বিবরণ)"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm && (
+          <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#555' }}>
+            {filteredQuestions.length} টি প্রশ্ন পাওয়া গেছে
+          </p>
+        )}
+      </div>
+
       {user ? (
         <div className="form-card">
           <h3>প্রশ্ন জিজ্ঞাসা</h3>
@@ -123,7 +146,7 @@ export default function ForumClient({ questions }) {
         </div>
       )}
 
-      {data.length > 0 ? data.map(q => (
+      {filteredQuestions.length > 0 ? filteredQuestions.map(q => (
         <div key={q.id} className="feature-card" style={{ textAlign: 'left' }}>
           <h4>{q.title}</h4>
           <p style={{ whiteSpace: 'pre-wrap' }}>{q.body}</p>
@@ -149,7 +172,7 @@ export default function ForumClient({ questions }) {
         </div>
       )) : (
         <div className="form-card" style={{ textAlign: 'center' }}>
-          <p>কোনো প্রশ্ন নেই। <Link href="/auth?mode=login" style={{ color: 'var(--primary)', fontWeight: 600 }}>লগইন করুন</Link> এবং প্রথম প্রশ্ন করুন।</p>
+          <p>কোনো প্রশ্ন পাওয়া যায়নি। {!searchTerm && <><Link href="/auth?mode=login" style={{ color: 'var(--primary)', fontWeight: 600 }}>লগইন করুন</Link> এবং প্রথম প্রশ্ন করুন।</>}</p>
         </div>
       )}
 

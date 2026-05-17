@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AuthProvider';
+import { getRelativeTime } from '@/lib/relativeTime';
 
 export default function BlogCard({ blog }) {
   const { user, supabase } = useAuth();
@@ -9,7 +10,6 @@ export default function BlogCard({ blog }) {
   const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // লাইক কাউন্ট ও ইউজারের লাইক স্ট্যাটাস লোড
   useEffect(() => {
     const fetchLikes = async () => {
       const { count } = await supabase
@@ -32,7 +32,6 @@ export default function BlogCard({ blog }) {
     };
     fetchLikes();
 
-    // রিয়েল-টাইম সাবস্ক্রিপশন
     const channel = supabase
       .channel(`blog-likes-${blog.id}`)
       .on(
@@ -72,7 +71,7 @@ export default function BlogCard({ blog }) {
       <Link href={`/blog/${blog.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
         <h4>{blog.title}</h4>
       </Link>
-      <small>{blog.category} — {blog.user_name}</small>
+      <small>{blog.category} — {blog.user_name} • {getRelativeTime(blog.created_at)}</small>
       <div style={{ whiteSpace: 'pre-wrap', marginTop: '1rem' }}>{blog.content}</div>
       <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <button

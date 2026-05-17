@@ -21,12 +21,6 @@ export const metadata = {
     type: 'website',
     locale: 'bn_BD',
   },
-  // 👇 একেবারে নিচে এই অংশটি যোগ করো
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
-  },
 };
 
 export default async function RootLayout({ children }) {
@@ -42,11 +36,7 @@ export default async function RootLayout({ children }) {
     <html lang="bn" className={notoSansBengali.variable}>
       <head>
         <meta name="theme-color" content="#0d2e1d" />
-        {/* নিরাপত্তার জন্য এটি রেখে দিচ্ছি, উপরের metadata কাজ না করলে এটি কাজ করবে */}
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico" />
-        <link rel="manifest" href="/manifest.json" />
+        {/* ফেভিকনের জন্য কোনো <link> ট্যাগ দিচ্ছি না, Next.js নিজেই icon.ico খুঁজে নেবে */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
         <link

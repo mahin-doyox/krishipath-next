@@ -1,18 +1,11 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import TodaysBest from '@/components/TodaysBest';
 
 export default function HomePage() {
   return (
     <main>
       <section className="hero">
-        <Image
-          src="https://i.ibb.co.com/tPMYJzkC/Add-Text-05-09-11-01-49.png"
-          width={1200}
-          height={600}
-          className="hero-image"
-          alt="কৃষিপথ ব্যানার"
-          priority
-        />
+        <img className="hero-image" src="https://i.ibb.co.com/tPMYJzkC/Add-Text-05-09-11-01-49.png" alt="কৃষিপথ ব্যানার" />
         <div className="hero-container">
           <div className="hero-text">
             <h1>কৃষির ডিজিটাল <span style={{ color: 'var(--gold)', borderBottom: '4px dotted var(--gold-light)' }}>পথচলা</span><br />এখন শুরু</h1>
@@ -26,6 +19,9 @@ export default function HomePage() {
       </section>
 
       <div className="container">
+        <h2 className="section-title">আজকের সেরা</h2>
+        <TodaysBest />
+
         <div className="quick-nav-grid">
           <Link href="/bazar" className="quick-nav-card"><i className="fas fa-store"></i><h3>কৃষিবাজার</h3></Link>
           <Link href="/prices" className="quick-nav-card"><i className="fas fa-chart-line"></i><h3>বাজার দর</h3></Link>

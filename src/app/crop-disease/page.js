@@ -13,13 +13,54 @@ export default function CropDiseasePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // ছবি সিলেক্ট করলে ইমিডিয়েটলি রিসাইজ করে স্টেটে রাখবে
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setSelectedFile(file);
+    
+    // ছবির প্রিভিউ তৈরি
     setPreview(URL.createObjectURL(file));
+    setSelectedFile(file);
     setResult(null);
     setError('');
+  };
+
+  // ক্লায়েন্ট-সাইডে ছবি রিসাইজ করার ফাংশন
+  const resizeImage = async (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800; // সর্বোচ্চ প্রস্থ
+          let { width, height } = img;
+
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 0.7 কোয়ালিটিতে JPEG বানাও, যাতে সাইজ কম থাকে
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return reject(new Error('ছবি রিসাইজ ব্যর্থ'));
+              resolve(blob);
+            },
+            'image/jpeg',
+            0.7
+          );
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleSubmit = async () => {
@@ -34,12 +75,16 @@ export default function CropDiseasePage() {
     setError('');
 
     try {
+      // প্রথমে ছবি রিসাইজ করো
+      const resizedBlob = await resizeImage(selectedFile);
+      
+      // তারপর রিসাইজ করা ব্লবকে বেস64-তে রূপান্তর করো
       const reader = new FileReader();
-      reader.readAsDataURL(selectedFile);
+      reader.readAsDataURL(resizedBlob);
       reader.onload = async () => {
-        const base64Image = reader.result.split(',')[1];
+        const base64Image = reader.result.split(',')[1]; // বেস64 পেলোড
 
-        // 🔁 এখন আমাদের নিজস্ব API কল করছে
+        // এখন আমাদের নিজস্ব API কল করো
         const response = await fetch('/api/detect-disease', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -55,11 +55,13 @@ export default function TodaysBest() {
         </div>
       )}
       {latestBlog && (
-        <div className="feature-card">
-          <h3>📝 সর্বশেষ ব্লগ</h3>
-          <Link href={`/blog/${latestBlog.id}`}><h4>{latestBlog.title}</h4></Link>
-          <small>{latestBlog.user_name} • {getRelativeTime(latestBlog.created_at)}</small>
-        </div>
+        <Link href="/blog" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="feature-card">
+            <h3>📝 সর্বশেষ ব্লগ</h3>
+            <h4>{latestBlog.title}</h4>
+            <small>{latestBlog.user_name} • {getRelativeTime(latestBlog.created_at)}</small>
+          </div>
+        </Link>
       )}
       {topQuestion && (
         <div className="feature-card">

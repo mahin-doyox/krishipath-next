@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 
+// ---------------- Plant Disease Detection (Kindwise API) ----------------
 export async function detectDisease(imageBase64) {
   const apiKey = process.env.NEXT_PUBLIC_KINDWISE_KEY;
   if (!apiKey) return { error: 'API কী সেট করা নেই' };
@@ -41,7 +42,7 @@ export async function detectDisease(imageBase64) {
   }
 }
 
-// ইতিহাস সংরক্ষণ (অপরিবর্তিত)
+// ---------------- Scan History ----------------
 export async function saveScan(userId, imageUrl, diseaseLabel, confidence) {
   const supabase = await createClient();
   const { error } = await supabase.from('crop_scans').insert({
@@ -57,7 +58,6 @@ export async function saveScan(userId, imageUrl, diseaseLabel, confidence) {
   return true;
 }
 
-// ইউজারের ইতিহাস ফেচ (অপরিবর্তিত)
 export async function getUserScans(userId) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -66,6 +66,72 @@ export async function getUserScans(userId) {
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(20);
+  if (error) return [];
+  return data;
+}
+
+// ---------------- DeepSeek Chatbot ----------------
+export async function sendChatMessage(userId, message) {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) return { error: 'API কী সেট করা নেই' };
+  if (!message?.trim()) return { error: 'মেসেজ দিন' };
+
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'তুমি একজন কৃষি বিশেষজ্ঞ। ব্যবহারকারী যখন কোনো ফসলের রোগের নাম বলবে, তুমি সেই রোগের জন্য প্রয়োজনীয় ওষুধের নাম, প্রয়োগ পদ্ধতি, এবং জৈব বিকল্প সহ পরামর্শ দেবে। বাংলায় উত্তর দেবে। সংক্ষিপ্ত কিন্তু তথ্যবহুল উত্তর দেবে।',
+          },
+          {
+            role: 'user',
+            content: message,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return { error: err.error?.message || 'DeepSeek API ত্রুটি' };
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || 'কোনো উত্তর পাওয়া যায়নি';
+
+    // Save to Supabase
+    const supabase = await createClient();
+    await supabase.from('crop_chats').insert({
+      user_id: userId,
+      message,
+      reply,
+    });
+
+    return { reply };
+  } catch (err) {
+    console.error('[DeepSeek] Network error:', err.message);
+    return { error: 'সার্ভার ত্রুটি' };
+  }
+}
+
+export async function getChatHistory(userId) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('crop_chats')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(50);
   if (error) return [];
   return data;
 }

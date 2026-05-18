@@ -69,7 +69,7 @@ export default function BlogCard({ blog }) {
 
   return (
     <div className="feature-card" style={{ textAlign: 'left' }}>
-      <Link href={`/blog/${blog.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link href={`/blog/${blog.id}`} prefetch={false} style={{ textDecoration: 'none', color: 'inherit' }}>
         <h4>{blog.title}</h4>
       </Link>
       <small>

@@ -1,0 +1,160 @@
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/components/AuthProvider';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { sendChatMessage, getChatHistory } from '@/app/actions';
+
+export default function CropChatPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [message, setMessage] = useState('');
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const chatEndRef = useRef(null);
+
+  // হিস্টরি লোড
+  useEffect(() => {
+    if (user) {
+      getChatHistory(user.id).then(setChats);
+    }
+  }, [user]);
+
+  // অটো স্ক্রল
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chats]);
+
+  const handleSend = async () => {
+    if (!user) {
+      router.push(`/auth?mode=login&redirect=${encodeURIComponent('/crop-chat')}`);
+      return;
+    }
+    if (!message.trim()) return;
+    setLoading(true);
+    setError('');
+
+    // ইউজারের মেসেজ সঙ্গে সঙ্গে দেখাবে
+    const userMsg = message.trim();
+    setChats(prev => [...prev, { id: Date.now(), message: userMsg, reply: '...' }]);
+    setMessage('');
+
+    const data = await sendChatMessage(user.id, userMsg);
+
+    if (data.error) {
+      setError(data.error);
+      // শেষ মেসেজটি সরিয়ে দাও বা এরর দেখাও
+      setChats(prev => prev.filter(c => c.reply !== '...'));
+    } else {
+      // শেষ মেসেজের reply আপডেট করো
+      setChats(prev =>
+        prev.map(c =>
+          c.reply === '...' ? { ...c, reply: data.reply } : c
+        )
+      );
+    }
+    setLoading(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="container" style={{ padding: '2rem 0', maxWidth: '700px' }}>
+      <h2 className="section-title">💬 কৃষি পরামর্শ চ্যাট</h2>
+
+      {!user && (
+        <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <p>⚠️ এই ফিচারটি ব্যবহার করতে লগইন করুন।</p>
+          <Link href={`/auth?mode=login&redirect=${encodeURIComponent('/crop-chat')}`} className="btn btn-primary btn-sm">
+            লগইন / রেজিস্টার
+          </Link>
+        </div>
+      )}
+
+      {/* চ্যাট এরিয়া */}
+      <div
+        style={{
+          background: 'var(--white)',
+          borderRadius: '20px',
+          padding: '1.2rem',
+          minHeight: '400px',
+          maxHeight: '500px',
+          overflowY: 'auto',
+          boxShadow: 'var(--shadow-sm)',
+          marginBottom: '1rem',
+        }}
+      >
+        {chats.length === 0 && (
+          <p style={{ textAlign: 'center', color: '#888', marginTop: '5rem' }}>
+            👋 স্বাগতম! আপনার ফসলের রোগের নাম লিখুন, ওষুধ ও পরামর্শ জানুন।
+          </p>
+        )}
+        {chats.map((chat) => (
+          <div key={chat.id} style={{ marginBottom: '1.2rem' }}>
+            {/* ইউজার মেসেজ */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.4rem' }}>
+              <div
+                style={{
+                  background: 'var(--primary)',
+                  color: 'white',
+                  padding: '0.7rem 1rem',
+                  borderRadius: '18px 18px 4px 18px',
+                  maxWidth: '80%',
+                  fontSize: '0.95rem',
+                }}
+              >
+                {chat.message}
+              </div>
+            </div>
+            {/* বট রিপ্লাই */}
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <div
+                style={{
+                  background: '#e8f5e9',
+                  color: 'var(--primary)',
+                  padding: '0.7rem 1rem',
+                  borderRadius: '18px 18px 18px 4px',
+                  maxWidth: '80%',
+                  fontSize: '0.95rem',
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {chat.reply}
+              </div>
+            </div>
+          </div>
+        ))}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* ইনপুট এরিয়া */}
+      {user && (
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="রোগের নাম লিখুন (যেমন: ধানের ব্লাস্ট রোগ)..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            style={{ flex: 1 }}
+          />
+          <button
+            className="btn btn-primary"
+            onClick={handleSend}
+            disabled={!message.trim() || loading}
+          >
+            {loading ? '...' : 'পাঠান'}
+          </button>
+        </div>
+      )}
+      {error && <p style={{ color: 'red', marginTop: '0.5rem', textAlign: 'center' }}>{error}</p>}
+    </div>
+  );
+}

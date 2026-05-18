@@ -14,12 +14,14 @@ export default function CropChatPage() {
   const [error, setError] = useState('');
   const chatEndRef = useRef(null);
 
+  // হিস্টরি লোড
   useEffect(() => {
     if (user) {
       getChatHistory(user.id).then(setChats);
     }
   }, [user]);
 
+  // অটো স্ক্রল
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chats]);
@@ -61,14 +63,12 @@ export default function CropChatPage() {
 
   return (
     <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: 'calc(100vh - 160px)', // top header + bottom nav space
       maxWidth: '700px',
       margin: '0 auto',
-      padding: '0 1rem',
-      paddingTop: '1rem',
-      paddingBottom: '1rem',
+      padding: '1rem 1rem 0',
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh',
     }}>
       <h2 className="section-title" style={{ fontSize: '1.6rem', marginBottom: '1rem', flexShrink: 0 }}>
         💬 কৃষি পরামর্শ চ্যাট
@@ -85,25 +85,24 @@ export default function CropChatPage() {
         </div>
       )}
 
-      {/* চ্যাট মেসেজ এরিয়া */}
+      {/* চ্যাট মেসেজ এরিয়া — পুরো পেজ স্ক্রল করবে */}
       <div
         style={{
           flex: 1,
-          overflowY: 'auto',
-          paddingRight: '0.2rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.8rem',
-          minHeight: 0,
+          gap: '1rem',
+          paddingBottom: '1rem',
         }}
       >
         {chats.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#888', marginTop: '3rem', padding: '0 1rem' }}>
+          <p style={{ textAlign: 'center', color: '#888', marginTop: '4rem', padding: '0 1rem' }}>
             👋 স্বাগতম! আপনার ফসলের রোগের নাম লিখুন, ওষুধ ও পরামর্শ জানুন।
           </p>
         )}
         {chats.map((chat) => (
           <div key={chat.id}>
+            {/* ইউজার মেসেজ */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.4rem' }}>
               <div
                 style={{
@@ -119,6 +118,7 @@ export default function CropChatPage() {
                 {chat.message}
               </div>
             </div>
+            {/* বট রিপ্লাই */}
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
               <div
                 style={{
@@ -140,13 +140,12 @@ export default function CropChatPage() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* ইনপুট এরিয়া — sticky, নিচের নেভের উপরে স্বাভাবিকভাবে থাকবে */}
+      {/* ইনপুট এরিয়া — sticky, নিচে স্থির */}
       {user && (
         <div
           style={{
-            flexShrink: 0,
             position: 'sticky',
-            bottom: '0',
+            bottom: 0,
             background: '#f2f9f2',
             paddingTop: '0.8rem',
             paddingBottom: '0.8rem',
@@ -154,7 +153,6 @@ export default function CropChatPage() {
             display: 'flex',
             gap: '0.5rem',
             alignItems: 'center',
-            marginTop: '0.5rem',
           }}
         >
           <input

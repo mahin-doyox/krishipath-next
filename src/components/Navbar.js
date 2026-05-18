@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
+import DarkModeToggle from './DarkModeToggle';
 
 export default function Navbar() {
   const { user, profile, signOut, supabase } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
   const pathname = usePathname();
 
@@ -23,11 +25,10 @@ export default function Navbar() {
 
     const channel = supabase
       .channel('notif-count')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-        () => setNotifCount((prev) => prev + 1)
-      )
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, () => setNotifCount((prev) => prev + 1))
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -39,19 +40,17 @@ export default function Navbar() {
     <>
       {/* ---- TOP BAR ---- */}
       <nav className="navbar">
-        <div className="logo" onClick={() => (window.location.href = '/')}>
-          <img
-            src="https://i.ibb.co.com/N2fHrxQd/Screenshot-2026-05-09-1-50-43-PM-removebg-preview.png"
-            alt="লোগো"
-          />
+        <div className="logo" onClick={() => window.location.href = '/'}>
+          <img src="https://i.ibb.co.com/N2fHrxQd/Screenshot-2026-05-09-1-50-43-PM-removebg-preview.png" alt="logo" />
           <div className="logo-text">কৃষিপথ <span>• krishipath</span></div>
         </div>
 
         <div className="header-actions">
+          <DarkModeToggle />
           {user && (
-            <div className="notification-badge" onClick={() => (window.location.href = '/profile')}>
+            <div className="notification-badge" onClick={() => window.location.href='/profile'}>
               <i className="fas fa-bell" style={{ fontSize: '1.3rem', color: 'var(--primary)' }}></i>
-              {notifCount > 0 && <span className="count" style={{ display: 'flex' }}>{notifCount}</span>}
+              {notifCount > 0 && <span className="count" style={{display:'flex'}}>{notifCount}</span>}
             </div>
           )}
           <div className="auth-buttons">

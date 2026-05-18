@@ -31,6 +31,10 @@ body {
   from { opacity: 0; transform: translateY(60px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
 
 h1, h2, h3 {
   font-weight: 700;
@@ -95,17 +99,7 @@ h1, h2, h3 {
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-
-/* ------ LOGO (DESKTOP) ------ */
-.logo img {
-  height: 44px;
-  width: auto;
-  object-fit: contain;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-}
-
+.logo img { height: 44px; border-radius: 50%; border: 2px solid white; box-shadow: var(--shadow-sm); }
 .logo-text { font-weight: 800; font-size: 1.3rem; color: var(--primary); }
 .logo-text span { color: var(--gold); }
 .header-actions { display: flex; align-items: center; gap: 0.8rem; }
@@ -279,36 +273,20 @@ footer {
     backdrop-filter: blur(14px);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
     z-index: 1000;
-    padding: 0.6rem 4%;
+    padding: 0.8rem 6%;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
   .header-actions { display: flex; align-items: center; gap: 0.8rem; }
   .auth-buttons { display: flex; }
-
-  /* ------ MOBILE LOGO (ক্লিন, একটু ছোট) ------ */
-  .logo img {
-    height: auto;
-    width: 80px;           /* আগে 120px ছিল, কমিয়ে 80px */
-    max-height: 40px;
-    object-fit: contain;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .logo-text {
-    font-size: 1rem;       /* আগের 1.3rem থেকে কমিয়ে */
-  }
-  .logo-text span {
-    display: none;         /* "• krishipath" সরিয়ে দিচ্ছি, শুধু "কৃষিপথ" থাকবে */
-  }
+  .logo img { height: 48px; }
+  .logo-text { font-size: 1.3rem; }
 
   /* ---- DESKTOP NAV (মোবাইল/ট্যাবলেটে আড়াল) ---- */
   .desktop-nav { display: none; }
 
-  /* ---- MOBILE BOTTOM NAV ---- */
+  /* ---- MOBILE BOTTOM NAV (মোবাইল/ট্যাবলেটে চালু) ---- */
   .mobile-bottom-nav {
     display: flex;
     position: fixed;
@@ -344,4 +322,91 @@ footer {
   .quick-nav-card i { font-size: 2rem; }
   .card-grid { grid-template-columns: 1fr; }
   .btn { width: 100%; justify-content: center; }
+}
+
+/* ---------- DARK MODE ---------- */
+[data-theme='dark'] {
+  --primary: #d4a373;
+  --primary-light: #1b4a30;
+  --gold: #d4a373;
+  --gold-light: #2a3a2a;
+  --white: #1a1a1a;
+  --gray-bg: #121212;
+  --shadow-sm: 0 4px 12px rgba(255,255,255,0.04);
+  --shadow-md: 0 8px 24px rgba(255,255,255,0.06);
+  --shadow-lg: 0 16px 32px rgba(255,255,255,0.1);
+}
+
+[data-theme='dark'] body {
+  background: #0d1117;
+  color: #e6e6e6;
+}
+
+[data-theme='dark'] .navbar,
+[data-theme='dark'] .desktop-nav,
+[data-theme='dark'] .mobile-bottom-nav,
+[data-theme='dark'] .feature-card,
+[data-theme='dark'] .form-card,
+[data-theme='dark'] .stat-card,
+[data-theme='dark'] .chart-container,
+[data-theme='dark'] .pending-item,
+[data-theme='dark'] .quick-nav-card,
+[data-theme='dark'] footer {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #e6e6e6;
+}
+
+[data-theme='dark'] a {
+  color: #d4a373;
+}
+
+[data-theme='dark'] .btn-outline {
+  border-color: #d4a373;
+  color: #d4a373;
+}
+
+[data-theme='dark'] .btn-outline:hover {
+  background: #d4a373;
+  color: #0d1117;
+}
+
+[data-theme='dark'] .form-control {
+  background: #0d1117;
+  border-color: #333;
+  color: #e6e6e6;
+}
+
+[data-theme='dark'] .feature-card:hover {
+  box-shadow: 0 8px 24px rgba(255,255,255,0.08);
+}
+
+[data-theme='dark'] .hero {
+  background: linear-gradient(145deg, #1a2a1a, #0d1117);
+}
+
+[data-theme='dark'] .hero-text h1 {
+  color: #e6e6e6;
+}
+
+[data-theme='dark'] .hero-text p {
+  color: #ccc;
+}
+
+/* ---------- SKELETON LOADING ---------- */
+.skeleton {
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+[data-theme='dark'] .skeleton {
+  background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+  background-size: 200px 100%;
+}
+
+.skeleton-card {
+  height: 200px;
+  margin-bottom: 1rem;
 }

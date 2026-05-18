@@ -107,12 +107,10 @@ export default function Navbar() {
           <Link href="/prices" className={pathname === '/prices' ? 'active' : ''}>
             বাজার দর
           </Link>
-          {/* 🧪 শুধুমাত্র লগইনকৃত ব্যবহারকারীদের জন্য রোগ নির্ণয় দেখাবে */}
-          {user && (
-            <Link href="/crop-disease" className={pathname === '/crop-disease' ? 'active' : ''}>
-              🧪 রোগ নির্ণয়
-            </Link>
-          )}
+          {/* 🧪 সবার জন্য দৃশ্যমান */}
+          <Link href="/crop-disease" className={pathname === '/crop-disease' ? 'active' : ''}>
+            🧪 রোগ নির্ণয়
+          </Link>
           {user && (
             <>
               <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>
@@ -150,13 +148,11 @@ export default function Navbar() {
           <i className="fas fa-chart-line"></i>
           <span>দর</span>
         </Link>
-        {/* 🧪 শুধুমাত্র লগইনকৃতদের জন্য রোগ নির্ণয় দেখাবে */}
-        {user && (
-          <Link href="/crop-disease" className={pathname === '/crop-disease' ? 'active' : ''}>
-            <i className="fas fa-microscope"></i>
-            <span>রোগ</span>
-          </Link>
-        )}
+        {/* 🧪 সবার জন্য দৃশ্যমান */}
+        <Link href="/crop-disease" className={pathname === '/crop-disease' ? 'active' : ''}>
+          <i className="fas fa-microscope"></i>
+          <span>রোগ</span>
+        </Link>
         {user && (
           <>
             <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>

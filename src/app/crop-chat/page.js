@@ -13,7 +13,6 @@ export default function CropChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const chatEndRef = useRef(null);
-  const inputContainerRef = useRef(null);
 
   // হিস্টরি লোড
   useEffect(() => {
@@ -26,19 +25,6 @@ export default function CropChatPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chats]);
-
-  // মোবাইলে নিচের বারকে ফাঁকি দিতে extra bottom space
-  const [bottomNavHeight, setBottomNavHeight] = useState(0);
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const mobileNav = document.querySelector('.mobile-bottom-nav');
-      if (mobileNav) {
-        setBottomNavHeight(mobileNav.offsetHeight + 10); // 10px extra
-      } else {
-        setBottomNavHeight(0);
-      }
-    }
-  }, []);
 
   const handleSend = async () => {
     if (!user) {
@@ -77,23 +63,33 @@ export default function CropChatPage() {
 
   return (
     <div style={{
-      maxWidth: '700px',
-      margin: '0 auto',
-      padding: '0 1rem',
-      minHeight: '100dvh',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       display: 'flex',
       flexDirection: 'column',
+      maxWidth: '700px',
+      margin: '0 auto',
+      background: '#f2f9f2',
+      zIndex: 500,
     }}>
-      <h2 className="section-title" style={{ fontSize: '1.6rem', margin: '1.5rem 0 1rem' }}>
-        💬 কৃষি পরামর্শ চ্যাট
-      </h2>
+      {/* হেডার */}
+      <div style={{ padding: '1rem 1rem 0.5rem', flexShrink: 0 }}>
+        <h2 className="section-title" style={{ fontSize: '1.6rem', margin: 0 }}>
+          💬 কৃষি পরামর্শ চ্যাট
+        </h2>
+      </div>
 
       {!user && (
-        <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <p>⚠️ এই ফিচারটি ব্যবহার করতে লগইন করুন।</p>
-          <Link href={`/auth?mode=login&redirect=${encodeURIComponent('/crop-chat')}`} className="btn btn-primary btn-sm">
-            লগইন / রেজিস্টার
-          </Link>
+        <div style={{ padding: '0 1rem', flexShrink: 0 }}>
+          <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            <p>⚠️ এই ফিচারটি ব্যবহার করতে লগইন করুন।</p>
+            <Link href={`/auth?mode=login&redirect=${encodeURIComponent('/crop-chat')}`} className="btn btn-primary btn-sm">
+              লগইন / রেজিস্টার
+            </Link>
+          </div>
         </div>
       )}
 
@@ -102,18 +98,14 @@ export default function CropChatPage() {
         style={{
           flex: 1,
           overflowY: 'auto',
-          background: 'var(--white)',
-          borderRadius: '20px',
-          padding: '1.2rem',
-          boxShadow: 'var(--shadow-sm)',
-          marginBottom: '1rem',
+          padding: '0 1rem 1rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
+          gap: '0.8rem',
         }}
       >
         {chats.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#888', marginTop: '5rem', padding: '0 1rem' }}>
+          <p style={{ textAlign: 'center', color: '#888', marginTop: '4rem', padding: '0 1rem' }}>
             👋 স্বাগতম! আপনার ফসলের রোগের নাম লিখুন, ওষুধ ও পরামর্শ জানুন।
           </p>
         )}
@@ -127,7 +119,7 @@ export default function CropChatPage() {
                   color: 'white',
                   padding: '0.7rem 1rem',
                   borderRadius: '18px 18px 4px 18px',
-                  maxWidth: '85%',
+                  maxWidth: '80%',
                   fontSize: '0.95rem',
                   wordBreak: 'break-word',
                 }}
@@ -143,7 +135,7 @@ export default function CropChatPage() {
                   color: 'var(--primary)',
                   padding: '0.7rem 1rem',
                   borderRadius: '18px 18px 18px 4px',
-                  maxWidth: '85%',
+                  maxWidth: '80%',
                   fontSize: '0.95rem',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
@@ -157,21 +149,19 @@ export default function CropChatPage() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* ইনপুট এরিয়া – নিচের বার থেকে দূরে */}
+      {/* ইনপুট এরিয়া — নিচের নেভের জন্য জায়গা রেখে */}
       {user && (
         <div
-          ref={inputContainerRef}
           style={{
+            flexShrink: 0,
+            padding: '0.8rem 1rem',
+            // মোবাইলে নিচের নেভের উচ্চতা ≈ 70-80px + কিছু মার্জিন
+            paddingBottom: 'calc(0.8rem + 80px)',
+            background: '#f2f9f2',
+            borderTop: '1px solid rgba(0,0,0,0.05)',
             display: 'flex',
             gap: '0.5rem',
             alignItems: 'center',
-            padding: '0.8rem 0',
-            position: 'sticky',
-            bottom: `${bottomNavHeight}px`,    // নিচের নেভের উপরে বসবে
-            zIndex: 1001,                      // নেভের উপরেই থাকবে
-            background: '#f2f9f2',
-            borderRadius: '12px',
-            marginBottom: '0.5rem',
           }}
         >
           <input
@@ -185,7 +175,7 @@ export default function CropChatPage() {
               padding: '12px 16px',
               borderRadius: '25px',
               border: '2px solid #d1e7dd',
-              fontSize: '1rem',
+              fontSize: '16px', // মোবাইলে 16px গুরুত্বপূর্ণ
               outline: 'none',
               background: 'white',
               color: 'var(--primary)',
@@ -197,17 +187,22 @@ export default function CropChatPage() {
             onClick={handleSend}
             disabled={!message.trim() || loading}
             style={{
-              padding: '12px 20px',
+              padding: '12px 18px',
               borderRadius: '25px',
               whiteSpace: 'nowrap',
               flexShrink: 0,
+              fontSize: '0.9rem',
             }}
           >
             {loading ? '...' : 'পাঠান'}
           </button>
         </div>
       )}
-      {error && <p style={{ color: 'red', marginTop: '0.5rem', textAlign: 'center' }}>{error}</p>}
+      {error && (
+        <p style={{ color: 'red', padding: '0 1rem 0.5rem', textAlign: 'center', flexShrink: 0 }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

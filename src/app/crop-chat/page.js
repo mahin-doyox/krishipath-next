@@ -13,6 +13,7 @@ export default function CropChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const chatEndRef = useRef(null);
+  const inputContainerRef = useRef(null);
 
   // হিস্টরি লোড
   useEffect(() => {
@@ -25,6 +26,19 @@ export default function CropChatPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chats]);
+
+  // মোবাইলে নিচের বারকে ফাঁকি দিতে extra bottom space
+  const [bottomNavHeight, setBottomNavHeight] = useState(0);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mobileNav = document.querySelector('.mobile-bottom-nav');
+      if (mobileNav) {
+        setBottomNavHeight(mobileNav.offsetHeight + 10); // 10px extra
+      } else {
+        setBottomNavHeight(0);
+      }
+    }
+  }, []);
 
   const handleSend = async () => {
     if (!user) {
@@ -65,12 +79,14 @@ export default function CropChatPage() {
     <div style={{
       maxWidth: '700px',
       margin: '0 auto',
-      padding: '1rem',
-      minHeight: '100vh',
+      padding: '0 1rem',
+      minHeight: '100dvh',
       display: 'flex',
       flexDirection: 'column',
     }}>
-      <h2 className="section-title" style={{ fontSize: '1.6rem', marginBottom: '1rem' }}>💬 কৃষি পরামর্শ চ্যাট</h2>
+      <h2 className="section-title" style={{ fontSize: '1.6rem', margin: '1.5rem 0 1rem' }}>
+        💬 কৃষি পরামর্শ চ্যাট
+      </h2>
 
       {!user && (
         <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
@@ -81,21 +97,19 @@ export default function CropChatPage() {
         </div>
       )}
 
-      {/* চ্যাট এরিয়া */}
+      {/* চ্যাট মেসেজ এরিয়া */}
       <div
         style={{
           flex: 1,
+          overflowY: 'auto',
           background: 'var(--white)',
           borderRadius: '20px',
           padding: '1.2rem',
-          overflowY: 'auto',
           boxShadow: 'var(--shadow-sm)',
           marginBottom: '1rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
-          minHeight: '400px',
-          maxHeight: 'calc(100vh - 250px)',
         }}
       >
         {chats.length === 0 && (
@@ -143,22 +157,25 @@ export default function CropChatPage() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* ইনপুট এরিয়া */}
+      {/* ইনপুট এরিয়া – নিচের বার থেকে দূরে */}
       {user && (
-        <div style={{
-          display: 'flex',
-          gap: '0.5rem',
-          alignItems: 'center',
-          padding: '0.5rem 0',
-          position: 'sticky',
-          bottom: 0,
-          background: '#f2f9f2',
-          borderRadius: '12px',
-          paddingBottom: '0.8rem',
-        }}>
+        <div
+          ref={inputContainerRef}
+          style={{
+            display: 'flex',
+            gap: '0.5rem',
+            alignItems: 'center',
+            padding: '0.8rem 0',
+            position: 'sticky',
+            bottom: `${bottomNavHeight}px`,    // নিচের নেভের উপরে বসবে
+            zIndex: 1001,                      // নেভের উপরেই থাকবে
+            background: '#f2f9f2',
+            borderRadius: '12px',
+            marginBottom: '0.5rem',
+          }}
+        >
           <input
             type="text"
-            className="form-control"
             placeholder="রোগের নাম লিখুন (যেমন: ধানের ব্লাস্ট রোগ)..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -170,7 +187,9 @@ export default function CropChatPage() {
               border: '2px solid #d1e7dd',
               fontSize: '1rem',
               outline: 'none',
-              minWidth: 0, // prevent overflow
+              background: 'white',
+              color: 'var(--primary)',
+              minWidth: 0,
             }}
           />
           <button

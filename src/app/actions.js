@@ -42,6 +42,39 @@ export async function detectDisease(imageBase64) {
   }
 }
 
+// ---------------- ছবি Supabase Storage-এ আপলোড ----------------
+export async function uploadScanImage(base64Image, userId) {
+  const supabase = await createClient();
+  const fileName = `scans/${userId}_${Date.now()}.jpg`;
+  
+  const byteString = atob(base64Image);
+  const mimeString = 'image/jpeg';
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  const blob = new Blob([ab], { type: mimeString });
+
+  const { error } = await supabase.storage
+    .from('images')
+    .upload(fileName, blob, {
+      contentType: 'image/jpeg',
+      upsert: false,
+    });
+
+  if (error) {
+    console.error('Upload error:', error.message);
+    return null;
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('images')
+    .getPublicUrl(fileName);
+
+  return publicUrl;
+}
+
 // ---------------- Scan History ----------------
 export async function saveScan(userId, imageUrl, diseaseLabel, confidence) {
   const supabase = await createClient();
@@ -109,7 +142,6 @@ export async function sendChatMessage(userId, message) {
     const data = await response.json();
     const reply = data.choices?.[0]?.message?.content || 'কোনো উত্তর পাওয়া যায়নি';
 
-    // Save to Supabase
     const supabase = await createClient();
     await supabase.from('crop_chats').insert({
       user_id: userId,

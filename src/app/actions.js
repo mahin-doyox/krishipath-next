@@ -1,74 +1,76 @@
 'use server';
 
+import { createClient } from '@/lib/supabase/server';
+
 export async function detectDisease(imageBase64) {
-  const token = process.env.NEXT_PUBLIC_HF_TOKEN;
-  if (!imageBase64) {
-    return { error: 'ছবি দেওয়া হয়নি' };
-  }
+  const apiKey = process.env.NEXT_PUBLIC_PLANTID_KEY;
+  if (!apiKey) return { error: 'API কী সেট করা নেই' };
+  if (!imageBase64) return { error: 'ছবি দেওয়া হয়নি' };
 
-  // HF মডেল raw base64 string আশা করে (data URI নয়)
-  // কিন্তু কিছু মডেল data URI চায়, আমরা উভয় চেষ্টা করব
-  const payloads = [
-    `data:image/jpeg;base64,${imageBase64}`,
-    imageBase64
-  ];
+  try {
+    const response = await fetch('https://api.plant.id/v2/health_assessment', {
+      method: 'POST',
+      headers: {
+        'Api-Key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        images: [`data:image/jpeg;base64,${imageBase64}`],
+        similar_images: false,
+      }),
+    });
 
-  for (const payload of payloads) {
-    let lastError = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const response = await fetch(
-          'https://api-inference.huggingface.co/models/dennisjooo/Bangla-Crop-Disease-Detection',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ inputs: payload }),
-          }
-        );
-
-        // সার্ভার ব্যস্ততা
-        if ([503, 429, 502, 500].includes(response.status)) {
-          const errorData = await response.json().catch(() => ({}));
-          const msg = errorData.error || response.statusText;
-          console.log(`[HF] Attempt ${attempt} (${response.status}): ${msg}`);
-          lastError = msg || 'সার্ভার ব্যস্ত, আবার চেষ্টা করুন...';
-          if (attempt < 3) {
-            await new Promise(r => setTimeout(r, 6000));
-            continue;
-          }
-          return { error: lastError };
-        }
-
-        // সুস্পষ্ট ত্রুটি
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const msg = errorData.error || 'হাগিং ফেস API ত্রুটি';
-          console.error(`[HF] Error: ${msg}`);
-          // এই পেলোড ফরম্যাটে সমস্যা থাকলে পরবর্তী পেলোড চেষ্টা করবে
-          break;
-        }
-
-        // সফল
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const top = data[0];
-          return {
-            label: top.label,
-            confidence: (top.score * 100).toFixed(2),
-          };
-        }
-        return { error: 'কোনো রোগ শনাক্ত করা যায়নি' };
-      } catch (err) {
-        console.error(`[HF] Network error: ${err.message}`);
-        lastError = err.message;
-        if (attempt === 3) break;
-        await new Promise(r => setTimeout(r, 4000));
-      }
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      return { error: err.message || 'Plant.id API ত্রুটি' };
     }
-    // প্রথম পেলোড কাজ না করলে দ্বিতীয় পেলোড চেষ্টা করবে
+
+    const data = await response.json();
+
+    if (data.health_assessment?.diseases?.length > 0) {
+      const top = data.health_assessment.diseases[0];
+      return {
+        label: top.name || 'রোগ শনাক্ত হয়েছে',
+        confidence: (top.probability * 100).toFixed(1),
+      };
+    }
+
+    if (data.health_assessment?.is_healthy) {
+      return { label: 'সুস্থ উদ্ভিদ 🌱', confidence: 100 };
+    }
+
+    return { error: 'কোনো রোগ শনাক্ত করা যায়নি' };
+  } catch (err) {
+    console.error('[PlantID] Network error:', err.message);
+    return { error: 'সার্ভার ত্রুটি' };
   }
-  return { error: 'হাগিং ফেস API ত্রুটি' };
+}
+
+// ইতিহাস সংরক্ষণ
+export async function saveScan(userId, imageUrl, diseaseLabel, confidence) {
+  const supabase = await createClient();
+  const { error } = await supabase.from('crop_scans').insert({
+    user_id: userId,
+    image_url: imageUrl,
+    disease_label: diseaseLabel,
+    confidence: parseFloat(confidence),
+  });
+  if (error) {
+    console.error('Save scan error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+// ইউজারের ইতিহাস ফেচ
+export async function getUserScans(userId) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('crop_scans')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  if (error) return [];
+  return data;
 }

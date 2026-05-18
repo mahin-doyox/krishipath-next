@@ -13,6 +13,7 @@ export default function CropChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const chatEndRef = useRef(null);
+  const [navHeight, setNavHeight] = useState(0);
 
   // হিস্টরি লোড
   useEffect(() => {
@@ -25,6 +26,17 @@ export default function CropChatPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chats]);
+
+  // নিচের মোবাইল নেভিগেশন বারের উচ্চতা মাপি
+  useEffect(() => {
+    const updateNavHeight = () => {
+      const el = document.querySelector('.mobile-bottom-nav');
+      setNavHeight(el ? el.offsetHeight : 0);
+    };
+    updateNavHeight();
+    window.addEventListener('resize', updateNavHeight);
+    return () => window.removeEventListener('resize', updateNavHeight);
+  }, []);
 
   const handleSend = async () => {
     if (!user) {
@@ -63,16 +75,25 @@ export default function CropChatPage() {
 
   return (
     <div style={{
-      maxWidth: '700px',
-      margin: '0 auto',
-      padding: '1rem 1rem 0',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: navHeight,   // নিচের নেভের জায়গা বাদ
       display: 'flex',
       flexDirection: 'column',
-      minHeight: '100vh',
+      background: '#f2f9f2',
+      zIndex: 500,
+      maxWidth: '700px',
+      margin: '0 auto',
+      padding: '0.5rem 1rem 0',
     }}>
-      <h2 className="section-title" style={{ fontSize: '1.6rem', marginBottom: '1rem', flexShrink: 0 }}>
-        💬 কৃষি পরামর্শ চ্যাট
-      </h2>
+      {/* হেডার */}
+      <div style={{ flexShrink: 0, paddingBottom: '0.5rem' }}>
+        <h2 className="section-title" style={{ fontSize: '1.5rem', margin: '0.5rem 0' }}>
+          💬 কৃষি পরামর্শ চ্যাট
+        </h2>
+      </div>
 
       {!user && (
         <div style={{ flexShrink: 0 }}>
@@ -85,14 +106,16 @@ export default function CropChatPage() {
         </div>
       )}
 
-      {/* চ্যাট মেসেজ এরিয়া — পুরো পেজ স্ক্রল করবে */}
+      {/* চ্যাট মেসেজ এরিয়া — এখন স্ক্রলেবল */}
       <div
         style={{
           flex: 1,
+          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
-          paddingBottom: '1rem',
+          gap: '0.8rem',
+          paddingBottom: '0.5rem',
+          minHeight: 0, // flex child-এর জন্য গুরুত্বপূর্ণ
         }}
       >
         {chats.length === 0 && (
@@ -140,15 +163,12 @@ export default function CropChatPage() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* ইনপুট এরিয়া — sticky, নিচে স্থির */}
+      {/* ইনপুট এরিয়া — নিচে স্থির */}
       {user && (
         <div
           style={{
-            position: 'sticky',
-            bottom: 0,
-            background: '#f2f9f2',
-            paddingTop: '0.8rem',
-            paddingBottom: '0.8rem',
+            flexShrink: 0,
+            padding: '0.8rem 0',
             borderTop: '1px solid rgba(0,0,0,0.05)',
             display: 'flex',
             gap: '0.5rem',

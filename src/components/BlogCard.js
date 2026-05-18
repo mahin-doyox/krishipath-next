@@ -18,7 +18,6 @@ export default function BlogCard({ blog }) {
         .eq('item_type', 'blog')
         .eq('item_id', blog.id);
       setLikeCount(count || 0);
-
       if (user) {
         const { data } = await supabase
           .from('likes')
@@ -31,7 +30,6 @@ export default function BlogCard({ blog }) {
       }
     };
     fetchLikes();
-
     const channel = supabase
       .channel(`blog-likes-${blog.id}`)
       .on(
@@ -40,7 +38,6 @@ export default function BlogCard({ blog }) {
         () => fetchLikes()
       )
       .subscribe();
-
     return () => supabase.removeChannel(channel);
   }, [blog.id, user, supabase]);
 
@@ -48,20 +45,10 @@ export default function BlogCard({ blog }) {
     if (!user) return alert('লাইক দিতে লগইন করুন।');
     if (loading) return;
     setLoading(true);
-
     if (liked) {
-      await supabase
-        .from('likes')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('item_type', 'blog')
-        .eq('item_id', blog.id);
+      await supabase.from('likes').delete().eq('user_id', user.id).eq('item_type', 'blog').eq('item_id', blog.id);
     } else {
-      await supabase.from('likes').insert({
-        user_id: user.id,
-        item_type: 'blog',
-        item_id: blog.id,
-      });
+      await supabase.from('likes').insert({ user_id: user.id, item_type: 'blog', item_id: blog.id });
     }
     setLoading(false);
   };

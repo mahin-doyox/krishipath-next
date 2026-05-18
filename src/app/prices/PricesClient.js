@@ -13,7 +13,7 @@ export default function PricesClient() {
   // ---------------- Dashboard Filters ----------------
   const [div, setDiv] = useState('');
   const [dist, setDist] = useState('');
-  const [upaz, setUpaz] = useState('');                // state name is 'upaz'
+  const [upaz, setUpaz] = useState('');
   const [area, setArea] = useState('');
   const [crop, setCrop] = useState('');
   const [areas, setAreas] = useState([]);
@@ -22,7 +22,7 @@ export default function PricesClient() {
   const [stats, setStats] = useState({ current: '--', max: '--', min: '--', avg: '--', trend: '' });
 
   // ---------------- Timeframe State ----------------
-  const [timeframe, setTimeframe] = useState('daily'); // daily | weekly | monthly
+  const [timeframe, setTimeframe] = useState('daily');
 
   // ---------------- Chart Refs ----------------
   const trendChartRef = useRef(null);
@@ -74,7 +74,6 @@ export default function PricesClient() {
   };
 
   const toggleWatchlist = (item) => {
-    // item: { division, district, upaz, area, crop }   <-- same keys
     const key = `${item.division}|${item.district}|${item.upaz}|${item.area}|${item.crop}`;
     if (watchlist.find(w => `${w.division}|${w.district}|${w.upaz}|${w.area}|${w.crop}` === key)) {
       saveWatchlist(watchlist.filter(w => `${w.division}|${w.district}|${w.upaz}|${w.area}|${w.crop}` !== key));
@@ -86,6 +85,17 @@ export default function PricesClient() {
   const isInWatchlist = (item) => {
     const key = `${item.division}|${item.district}|${item.upaz}|${item.area}|${item.crop}`;
     return watchlist.some(w => `${w.division}|${w.district}|${w.upaz}|${w.area}|${w.crop}` === key);
+  };
+
+  // Helper to get current theme colors
+  const getChartColors = () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      textColor: isDark ? '#e2e2e2' : '#0a1f1a',
+      gridColor: isDark ? '#444' : '#e0e0e0',
+      primaryColor: isDark ? '#f5e56c' : '#0d2e1d',
+      secondaryColor: isDark ? '#d4a373' : '#d4a373',
+    };
   };
 
   // ============================================
@@ -107,7 +117,6 @@ export default function PricesClient() {
     } else { setCrops([]); setCrop(''); }
   }, [div, dist, upaz, area, supabase]);
 
-  // Fetch all available crops for comparison/regional
   useEffect(() => {
     supabase.from('agent_prices').select('crop', { distinct: true }).eq('approved', true)
       .then(({ data }) => { if (data) setCompareCrops([...new Set(data.map(c => c.crop).filter(Boolean))]); });
@@ -125,7 +134,7 @@ export default function PricesClient() {
     const { data } = await supabase
       .from('agent_prices')
       .select('*')
-      .eq('division', div).eq('district', dist).eq('upazila', upaz)    // upaz state used
+      .eq('division', div).eq('district', dist).eq('upazila', upaz)
       .eq('area', area).eq('crop', crop).eq('approved', true)
       .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: true });
@@ -138,7 +147,6 @@ export default function PricesClient() {
 
     const prices = data.map(d => d.price);
     const labels = data.map(d => new Date(d.created_at).toLocaleDateString('bn-BD'));
-
     const current = prices[prices.length - 1];
     const max = Math.max(...prices);
     const min = Math.min(...prices);
@@ -150,12 +158,13 @@ export default function PricesClient() {
     }
     setStats({ current: `${current} টাকা/কেজি`, max: `${max} টাকা`, min: `${min} টাকা`, avg: `${avg} টাকা`, trend });
 
-    // 7-day moving average
     const ma = [];
     for (let i = 0; i < prices.length; i++) {
       const slice = prices.slice(Math.max(0, i - 6), i + 1);
       ma.push((slice.reduce((a, b) => a + b, 0) / slice.length));
     }
+
+    const colors = getChartColors();
 
     if (trendChartRef.current) {
       if (trendInstance.current) trendInstance.current.destroy();
@@ -168,26 +177,40 @@ export default function PricesClient() {
             {
               label: `${crop} (${area}) - মূল্য`,
               data: prices,
-              borderColor: '#0d2e1d',
-              backgroundColor: 'rgba(13,46,29,0.1)',
-              fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2
+              borderColor: colors.primaryColor,
+              backgroundColor: 'transparent',
+              fill: false,
+              tension: 0.3,
+              pointRadius: 2,
+              borderWidth: 2,
             },
             {
               label: '7-দিনের গড়',
               data: ma,
-              borderColor: '#d4a373',
+              borderColor: colors.secondaryColor,
               borderDash: [5, 5],
               borderWidth: 2,
               pointRadius: 0,
-              fill: false
-            }
-          ]
+              fill: false,
+            },
+          ],
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { font: { size: 12 } } } },
-          scales: { y: { beginAtZero: false } }
-        }
+          plugins: {
+            legend: { labels: { color: colors.textColor, font: { size: 12 } } },
+          },
+          scales: {
+            x: {
+              ticks: { color: colors.textColor },
+              grid: { color: colors.gridColor },
+            },
+            y: {
+              ticks: { color: colors.textColor },
+              grid: { color: colors.gridColor },
+            },
+          },
+        },
       });
     }
   };
@@ -237,6 +260,8 @@ export default function PricesClient() {
       return total / count;
     });
 
+    const colors = getChartColors();
+
     if (comparisonChartRef.current) {
       if (comparisonInstance.current) comparisonInstance.current.destroy();
       const ctx = comparisonChartRef.current.getContext('2d');
@@ -245,15 +270,18 @@ export default function PricesClient() {
         data: {
           labels,
           datasets: [
-            { label: primaryCrop, data: dataset1, borderColor: '#0d2e1d', borderWidth: 2, tension: 0.2 },
-            { label: compareCrop, data: dataset2, borderColor: '#d4a373', borderWidth: 2, tension: 0.2 }
-          ]
+            { label: primaryCrop, data: dataset1, borderColor: colors.primaryColor, borderWidth: 2, tension: 0.2 },
+            { label: compareCrop, data: dataset2, borderColor: colors.secondaryColor, borderWidth: 2, tension: 0.2 },
+          ],
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { font: { size: 12 } } } },
-          scales: { y: { beginAtZero: false } }
-        }
+          plugins: { legend: { labels: { color: colors.textColor, font: { size: 12 } } } },
+          scales: {
+            x: { ticks: { color: colors.textColor }, grid: { color: colors.gridColor } },
+            y: { ticks: { color: colors.textColor }, grid: { color: colors.gridColor } },
+          },
+        },
       });
     }
   };
@@ -290,6 +318,8 @@ export default function PricesClient() {
     const values = labels.map(div => Math.round(divisionTotals[div] / divisionCounts[div]));
     setRegionalData({ labels, values });
 
+    const colors = getChartColors();
+
     if (regionalChartRef.current) {
       if (regionalInstance.current) regionalInstance.current.destroy();
       const ctx = regionalChartRef.current.getContext('2d');
@@ -297,13 +327,16 @@ export default function PricesClient() {
         type: 'bar',
         data: {
           labels,
-          datasets: [{ label: `${regionalCrop} - গড় দাম (টাকা)`, data: values, backgroundColor: '#0d2e1d' }]
+          datasets: [{ label: `${regionalCrop} - গড় দাম (টাকা)`, data: values, backgroundColor: colors.primaryColor }],
         },
         options: {
           responsive: true,
           plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
-        }
+          scales: {
+            x: { ticks: { color: colors.textColor }, grid: { color: colors.gridColor } },
+            y: { ticks: { color: colors.textColor }, grid: { color: colors.gridColor } },
+          },
+        },
       });
     }
   };

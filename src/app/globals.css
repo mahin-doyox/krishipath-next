@@ -99,7 +99,17 @@ h1, h2, h3 {
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.logo img { height: 44px; border-radius: 50%; border: 2px solid white; box-shadow: var(--shadow-sm); }
+
+/* LOGO ক্লিন – কোনো বর্ডার, শ্যাডো, রেডিয়াস নেই */
+.logo img {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
 .logo-text { font-weight: 800; font-size: 1.3rem; color: var(--primary); }
 .logo-text span { color: var(--gold); }
 .header-actions { display: flex; align-items: center; gap: 0.8rem; }
@@ -324,22 +334,24 @@ footer {
   .btn { width: 100%; justify-content: center; }
 }
 
-/* ---------- DARK MODE ---------- */
+/* ============================================================
+   🌙 DARK MODE — gorgeous, professional, lemon‑fresh accent
+   ============================================================ */
 [data-theme='dark'] {
-  --primary: #d4a373;
-  --primary-light: #1b4a30;
-  --gold: #d4a373;
-  --gold-light: #2a3a2a;
-  --white: #1a1a1a;
-  --gray-bg: #121212;
-  --shadow-sm: 0 4px 12px rgba(255,255,255,0.04);
-  --shadow-md: 0 8px 24px rgba(255,255,255,0.06);
-  --shadow-lg: 0 16px 32px rgba(255,255,255,0.1);
+  --primary: #d4a373;            /* warm gold */
+  --primary-light: #2c4a2c;
+  --gold: #f5e56c;               /* lemon yellow accent */
+  --gold-light: #3a3a2a;
+  --white: #1a1a1a;              /* card backgrounds */
+  --gray-bg: #0f1115;
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 16px 32px rgba(0,0,0,0.5);
 }
 
 [data-theme='dark'] body {
-  background: #0d1117;
-  color: #e6e6e6;
+  background: #0b0d10;
+  color: #e2e2e2;
 }
 
 [data-theme='dark'] .navbar,
@@ -352,48 +364,103 @@ footer {
 [data-theme='dark'] .pending-item,
 [data-theme='dark'] .quick-nav-card,
 [data-theme='dark'] footer {
-  background: #1a1a1a;
-  border-color: #333;
-  color: #e6e6e6;
+  background: #1a1d22;
+  border-color: #2a2e35;
+  color: #e2e2e2;
+}
+
+[data-theme='dark'] .navbar {
+  background: rgba(26, 29, 34, 0.96);
+  border-bottom: 1px solid #2a2e35;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+[data-theme='dark'] .desktop-nav {
+  background: rgba(26, 29, 34, 0.96);
+  border-bottom: 1px solid #2a2e35;
+}
+
+[data-theme='dark'] .mobile-bottom-nav {
+  background: rgba(26, 29, 34, 0.98);
+  border-top: 1px solid #2a2e35;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.4);
 }
 
 [data-theme='dark'] a {
-  color: #d4a373;
+  color: #f5e56c;
+}
+
+[data-theme='dark'] .btn-primary {
+  background: #f5e56c;
+  color: #0d0f12;
+  font-weight: 700;
+}
+[data-theme='dark'] .btn-primary:hover:not(:disabled) {
+  background: #ffe97c;
 }
 
 [data-theme='dark'] .btn-outline {
-  border-color: #d4a373;
-  color: #d4a373;
+  border-color: #f5e56c;
+  color: #f5e56c;
 }
-
-[data-theme='dark'] .btn-outline:hover {
-  background: #d4a373;
-  color: #0d1117;
+[data-theme='dark'] .btn-outline:hover:not(:disabled) {
+  background: #f5e56c;
+  color: #0d0f12;
 }
 
 [data-theme='dark'] .form-control {
-  background: #0d1117;
-  border-color: #333;
-  color: #e6e6e6;
+  background: #0f1115;
+  border-color: #2a2e35;
+  color: #e2e2e2;
+}
+[data-theme='dark'] .form-control:focus {
+  border-color: #f5e56c;
+  box-shadow: 0 0 0 4px rgba(245, 229, 108, 0.15);
 }
 
 [data-theme='dark'] .feature-card:hover {
-  box-shadow: 0 8px 24px rgba(255,255,255,0.08);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  border-color: #f5e56c;
 }
 
 [data-theme='dark'] .hero {
-  background: linear-gradient(145deg, #1a2a1a, #0d1117);
+  background: linear-gradient(145deg, #1a2220, #0b0d10);
 }
-
 [data-theme='dark'] .hero-text h1 {
-  color: #e6e6e6;
+  color: #f0f0f0;
+}
+[data-theme='dark'] .hero-text p {
+  color: #cccccc;
 }
 
-[data-theme='dark'] .hero-text p {
+[data-theme='dark'] .section-title {
+  color: #f0f0f0;
+}
+[data-theme='dark'] .section-title::after {
+  background: linear-gradient(90deg, #f5e56c, #d4a373);
+}
+
+[data-theme='dark'] .admin-tab.active,
+[data-theme='dark'] .filter-tab.active {
+  background: #f5e56c;
+  color: #0d0f12;
+}
+
+[data-theme='dark'] .filter-tab {
+  background: #2a2e35;
   color: #ccc;
 }
 
-/* ---------- SKELETON LOADING ---------- */
+[data-theme='dark'] .notification-badge .count {
+  background: #f5e56c;
+  color: #0d0f12;
+}
+
+[data-theme='dark'] footer {
+  background: #111418;
+}
+
+/* ---------- SKELETON ---------- */
 .skeleton {
   background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
   background-size: 200px 100%;

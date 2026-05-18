@@ -13,6 +13,7 @@ export default function CropChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const chatEndRef = useRef(null);
+  const bottomNavRef = useRef(null);
 
   // হিস্টরি লোড
   useEffect(() => {
@@ -25,6 +26,22 @@ export default function CropChatPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chats]);
+
+  // নিচের নেভিগেশন বারের উচ্চতা বের করি
+  const [navHeight, setNavHeight] = useState(0);
+  useEffect(() => {
+    const updateNavHeight = () => {
+      const el = document.querySelector('.mobile-bottom-nav');
+      if (el) {
+        setNavHeight(el.offsetHeight);
+      } else {
+        setNavHeight(0);
+      }
+    };
+    updateNavHeight();
+    window.addEventListener('resize', updateNavHeight);
+    return () => window.removeEventListener('resize', updateNavHeight);
+  }, []);
 
   const handleSend = async () => {
     if (!user) {
@@ -70,10 +87,12 @@ export default function CropChatPage() {
       bottom: 0,
       display: 'flex',
       flexDirection: 'column',
-      maxWidth: '700px',
-      margin: '0 auto',
       background: '#f2f9f2',
       zIndex: 500,
+      maxWidth: '700px',
+      margin: '0 auto',
+      // নিচের নেভের জায়গা ছেড়ে দেব
+      paddingBottom: navHeight + 10,
     }}>
       {/* হেডার */}
       <div style={{ padding: '1rem 1rem 0.5rem', flexShrink: 0 }}>
@@ -98,10 +117,11 @@ export default function CropChatPage() {
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '0 1rem 1rem',
+          padding: '0 1rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.8rem',
+          minHeight: 0,
         }}
       >
         {chats.length === 0 && (
@@ -149,14 +169,12 @@ export default function CropChatPage() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* ইনপুট এরিয়া — নিচের নেভের জন্য জায়গা রেখে */}
+      {/* ইনপুট এরিয়া — এবার নিচের নেভের উপরে সুন্দরভাবে বসবে */}
       {user && (
         <div
           style={{
             flexShrink: 0,
             padding: '0.8rem 1rem',
-            // মোবাইলে নিচের নেভের উচ্চতা ≈ 70-80px + কিছু মার্জিন
-            paddingBottom: 'calc(0.8rem + 80px)',
             background: '#f2f9f2',
             borderTop: '1px solid rgba(0,0,0,0.05)',
             display: 'flex',
@@ -166,16 +184,16 @@ export default function CropChatPage() {
         >
           <input
             type="text"
-            placeholder="রোগের নাম লিখুন (যেমন: ধানের ব্লাস্ট রোগ)..."
+            placeholder="রোগের নাম লিখুন..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             style={{
               flex: 1,
-              padding: '12px 16px',
-              borderRadius: '25px',
+              padding: '14px 18px',  // একটু বড় প্যাডিং
+              borderRadius: '30px',
               border: '2px solid #d1e7dd',
-              fontSize: '16px', // মোবাইলে 16px গুরুত্বপূর্ণ
+              fontSize: '16px',       // মোবাইলে জুম রোধে 16px
               outline: 'none',
               background: 'white',
               color: 'var(--primary)',
@@ -183,15 +201,18 @@ export default function CropChatPage() {
             }}
           />
           <button
-            className="btn btn-primary"
             onClick={handleSend}
             disabled={!message.trim() || loading}
             style={{
-              padding: '12px 18px',
-              borderRadius: '25px',
+              padding: '14px 20px',
+              borderRadius: '30px',
+              background: 'var(--primary)',
+              color: 'white',
+              border: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
               whiteSpace: 'nowrap',
               flexShrink: 0,
-              fontSize: '0.9rem',
             }}
           >
             {loading ? '...' : 'পাঠান'}

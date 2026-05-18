@@ -12,7 +12,7 @@ export async function detectDisease(imageBase64) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await fetch(
-        'https://api-inference.huggingface.co/models/adityasalian/plant-disease-detection',
+        'https://api-inference.huggingface.co/models/linkanjarad/crop-disease-classification',  // ✅ নতুন মডেল
         {
           method: 'POST',
           headers: {
@@ -23,16 +23,11 @@ export async function detectDisease(imageBase64) {
         }
       );
 
-      // 🔍 সম্পূর্ণ স্ট্যাটাস ও বডি লগ করো
-      const responseBody = await response.text();
-      console.log(`[HF] Attempt ${attempt} - Status: ${response.status}`);
-      console.log(`[HF] Attempt ${attempt} - Body: ${responseBody}`);
-
-      // পরিচিত ক্ষণস্থায়ী ত্রুটি
+      // ক্ষণস্থায়ী ত্রুটির জন্য অপেক্ষা ও পুনরায় চেষ্টা
       if ([503, 429, 502, 500].includes(response.status)) {
-        let msg = responseBody;
-        try { msg = JSON.parse(responseBody).error || msg; } catch {}
-        console.log(`[HF] Transient error, retrying...`);
+        const errorData = await response.json().catch(() => ({}));
+        const msg = errorData.error || response.statusText;
+        console.log(`[HF] Attempt ${attempt}: ${response.status} - ${msg}`);
         lastError = msg || 'সার্ভার ব্যস্ত, আবার চেষ্টা করুন...';
         if (attempt < 3) {
           await new Promise(r => setTimeout(r, 6000));
@@ -41,16 +36,14 @@ export async function detectDisease(imageBase64) {
         return { error: lastError };
       }
 
-      // অন্যান্য ত্রুটি
       if (!response.ok) {
-        let errorMsg = responseBody;
-        try { errorMsg = JSON.parse(responseBody).error || errorMsg; } catch {}
-        console.error(`[HF] Non-transient error: ${errorMsg}`);
-        return { error: errorMsg };
+        const errorData = await response.json().catch(() => ({}));
+        const msg = errorData.error || 'হাগিং ফেস API ত্রুটি';
+        console.error(`[HF] Error: ${msg}`);
+        return { error: msg };
       }
 
-      // সফল রেসপন্স প্রসেস
-      const data = JSON.parse(responseBody);
+      const data = await response.json();
       if (Array.isArray(data) && data.length > 0) {
         const top = data[0];
         return {

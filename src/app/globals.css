@@ -477,3 +477,14 @@ footer {
   height: 200px;
   margin-bottom: 1rem;
 }
+/* ---------- ANSWER BOX ---------- */
+.answer-box {
+  background: #f8faf5;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+[data-theme='dark'] .answer-box {
+  background: #2a2e35;
+  border-color: #444;
+  color: #e2e2e2;
+}

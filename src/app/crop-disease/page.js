@@ -13,27 +13,26 @@ export default function CropDiseasePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ছবি সিলেক্ট করলে ইমিডিয়েটলি রিসাইজ করে স্টেটে রাখবে
+  // ছবি সিলেক্ট করলে প্রিভিউ দেখাবে
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
-    // ছবির প্রিভিউ তৈরি
-    setPreview(URL.createObjectURL(file));
+
     setSelectedFile(file);
+    setPreview(URL.createObjectURL(file)); // প্রিভিউ URL তৈরি
     setResult(null);
     setError('');
   };
 
-  // ক্লায়েন্ট-সাইডে ছবি রিসাইজ করার ফাংশন
-  const resizeImage = async (file) => {
+  // ক্লায়েন্ট-সাইডে ছবি রিসাইজ করে ব্লব রিটার্ন করে
+  const resizeImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800; // সর্বোচ্চ প্রস্থ
+          const MAX_WIDTH = 800;
           let { width, height } = img;
 
           if (width > MAX_WIDTH) {
@@ -46,7 +45,6 @@ export default function CropDiseasePage() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // 0.7 কোয়ালিটিতে JPEG বানাও, যাতে সাইজ কম থাকে
           canvas.toBlob(
             (blob) => {
               if (!blob) return reject(new Error('ছবি রিসাইজ ব্যর্থ'));
@@ -64,6 +62,7 @@ export default function CropDiseasePage() {
   };
 
   const handleSubmit = async () => {
+    // লগইন চেক
     if (!user) {
       const currentPath = '/crop-disease';
       router.push(`/auth?mode=login&redirect=${encodeURIComponent(currentPath)}`);
@@ -75,16 +74,16 @@ export default function CropDiseasePage() {
     setError('');
 
     try {
-      // প্রথমে ছবি রিসাইজ করো
+      // ছবি রিসাইজ করো
       const resizedBlob = await resizeImage(selectedFile);
-      
-      // তারপর রিসাইজ করা ব্লবকে বেস64-তে রূপান্তর করো
+
+      // রিসাইজ করা ব্লবকে বেস64-তে রূপান্তর
       const reader = new FileReader();
       reader.readAsDataURL(resizedBlob);
       reader.onload = async () => {
-        const base64Image = reader.result.split(',')[1]; // বেস64 পেলোড
+        const base64Image = reader.result.split(',')[1];
 
-        // এখন আমাদের নিজস্ব API কল করো
+        // আমাদের নিজস্ব API প্রক্সিতে কল
         const response = await fetch('/api/detect-disease', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -128,18 +127,32 @@ export default function CropDiseasePage() {
       <div className="form-card">
         <div className="form-group">
           <label>ফসলের পাতা বা আক্রান্ত অংশের ছবি আপলোড করুন</label>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="form-control" />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="form-control"
+            style={{ padding: '10px' }}
+          />
         </div>
         {preview && (
           <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-            <img src={preview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '12px' }} />
+            <img
+              src={preview}
+              alt="প্রিভিউ"
+              style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '12px', border: '1px solid #ccc' }}
+            />
           </div>
         )}
-        <button className="btn btn-primary w-100 mt-3" onClick={handleSubmit} disabled={!selectedFile || loading}>
+        <button
+          className="btn btn-primary w-100 mt-3"
+          onClick={handleSubmit}
+          disabled={!selectedFile || loading}
+        >
           {loading ? 'নির্ণয় করা হচ্ছে...' : 'রোগ নির্ণয় করুন'}
         </button>
 
-        {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: 'red', marginTop: '1rem', textAlign: 'center' }}>{error}</p>}
 
         {result && (
           <div className="stat-card" style={{ marginTop: '1.5rem', textAlign: 'center' }}>

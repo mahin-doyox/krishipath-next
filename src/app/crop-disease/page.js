@@ -1,12 +1,22 @@
 'use client';
 import { useState } from 'react';
+import { useAuth } from '@/components/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 export default function CropDiseasePage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // যদি ইউজার লগইন না করে থাকে, তাহলে লগইন পেজে রিডাইরেক্ট
+  if (!user) {
+    router.push('/auth?mode=login');
+    return null; // অথবা একটি লোডিং দেখাতে পারো
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -23,13 +33,10 @@ export default function CropDiseasePage() {
     setError('');
 
     try {
-      // ছবিকে base64 এ রূপান্তর
       const reader = new FileReader();
       reader.readAsDataURL(selectedFile);
       reader.onload = async () => {
-        const base64Image = reader.result.split(',')[1]; // data:image/... সরিয়ে ফেলা
-
-        // Hugging Face API কল
+        const base64Image = reader.result.split(',')[1];
         const response = await fetch(
           'https://api-inference.huggingface.co/models/adityasalian/plant-disease-detection',
           {
@@ -47,9 +54,8 @@ export default function CropDiseasePage() {
           throw new Error(data.error || 'API ত্রুটি');
         }
 
-        // রেসপন্স প্রসেস: সবচেয়ে বেশি কনফিডেন্সের ক্লাস দেখাবে
         if (Array.isArray(data) && data.length > 0) {
-          const topPrediction = data[0]; // প্রথম ফলাফল
+          const topPrediction = data[0];
           setResult({
             label: topPrediction.label,
             confidence: (topPrediction.score * 100).toFixed(2),

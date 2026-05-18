@@ -1,42 +1,30 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { createClientBrowser } from '@/lib/supabase/client';
-import BlogCardSkeleton from '@/components/BlogCardSkeleton';
+export async function generateMetadata({ params }) {
+  const supabase = await createClient();
+  const { data: blog } = await supabase
+    .from('blogs')
+    .select('*')
+    .eq('id', params.id)
+    .maybeSingle();
 
-export default function BlogDetailPage() {
-  const params = useParams();
-  const [blog, setBlog] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClientBrowser();
-
-  useEffect(() => {
-    const fetchBlog = async () => {
-      const { data } = await supabase
-        .from('blogs')
-        .select('*')
-        .eq('id', params.id)
-        .maybeSingle();
-      setBlog(data);
-      setLoading(false);
-      if (data?.approved) {
-        document.title = `${data.title} - কৃষিপথ ব্লগ`;
-      } else {
-        document.title = 'ব্লগ পাওয়া যায়নি - কৃষিপথ';
-      }
-    };
-    fetchBlog();
-  }, [params.id, supabase]);
-
-  if (loading) {
-    return (
-      <div className="container" style={{ padding: '2rem 0' }}>
-        <BlogCardSkeleton />
-        <BlogCardSkeleton />
-      </div>
-    );
+  if (!blog || !blog.approved) {
+    return { title: 'ব্লগ পাওয়া যায়নি' };
   }
+
+  return {
+    title: `${blog.title} - কৃষিপথ ব্লগ`,
+    description: blog.content?.slice(0, 160),
+  };
+}
+
+export default async function BlogDetailPage({ params }) {
+  const supabase = await createClient();
+  const { data: blog } = await supabase
+    .from('blogs')
+    .select('*')
+    .eq('id', params.id)
+    .maybeSingle();
 
   if (!blog || !blog.approved) {
     return (

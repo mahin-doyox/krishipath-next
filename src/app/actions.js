@@ -23,27 +23,34 @@ export async function detectDisease(imageBase64) {
         }
       );
 
-      // সার্ভার ব্যস্ত বা মডেল লোডিং — অপেক্ষা করে পুনঃচেষ্টা
+      // 🔍 সম্পূর্ণ স্ট্যাটাস ও বডি লগ করো
+      const responseBody = await response.text();
+      console.log(`[HF] Attempt ${attempt} - Status: ${response.status}`);
+      console.log(`[HF] Attempt ${attempt} - Body: ${responseBody}`);
+
+      // পরিচিত ক্ষণস্থায়ী ত্রুটি
       if ([503, 429, 502, 500].includes(response.status)) {
-        const errorData = await response.json().catch(() => ({}));
-        const msg = errorData.error || response.statusText;
-        console.log(`[HF] Attempt ${attempt}: ${response.status} - ${msg}`);
+        let msg = responseBody;
+        try { msg = JSON.parse(responseBody).error || msg; } catch {}
+        console.log(`[HF] Transient error, retrying...`);
         lastError = msg || 'সার্ভার ব্যস্ত, আবার চেষ্টা করুন...';
         if (attempt < 3) {
-          await new Promise(r => setTimeout(r, 6000)); // ৬ সেকেন্ড
+          await new Promise(r => setTimeout(r, 6000));
           continue;
         }
         return { error: lastError };
       }
 
+      // অন্যান্য ত্রুটি
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const msg = errorData.error || 'হাগিং ফেস API ত্রুটি';
-        console.error('[HF] Error:', msg);
-        return { error: msg };
+        let errorMsg = responseBody;
+        try { errorMsg = JSON.parse(responseBody).error || errorMsg; } catch {}
+        console.error(`[HF] Non-transient error: ${errorMsg}`);
+        return { error: errorMsg };
       }
 
-      const data = await response.json();
+      // সফল রেসপন্স প্রসেস
+      const data = JSON.parse(responseBody);
       if (Array.isArray(data) && data.length > 0) {
         const top = data[0];
         return {
@@ -53,7 +60,7 @@ export async function detectDisease(imageBase64) {
       }
       return { error: 'কোনো রোগ শনাক্ত করা যায়নি' };
     } catch (err) {
-      console.error('[HF] Network error:', err.message);
+      console.error(`[HF] Network error: ${err.message}`);
       lastError = err.message;
       if (attempt === 3) break;
       await new Promise(r => setTimeout(r, 4000));

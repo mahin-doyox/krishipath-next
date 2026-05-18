@@ -25,7 +25,6 @@ export async function detectDisease(imageBase64) {
     }
 
     const data = await response.json();
-    // প্রথম রেজাল্ট নেওয়া
     if (Array.isArray(data) && data.length > 0) {
       return {
         label: data[0].label,

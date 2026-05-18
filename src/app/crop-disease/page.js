@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { detectDisease } from '@/app/actions'; // 🆕 Server Action ইম্পোর্ট
 
 export default function CropDiseasePage() {
   const { user } = useAuth();
@@ -13,18 +14,16 @@ export default function CropDiseasePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ছবি সিলেক্ট করলে প্রিভিউ দেখাবে
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setSelectedFile(file);
-    setPreview(URL.createObjectURL(file)); // প্রিভিউ URL তৈরি
+    setPreview(URL.createObjectURL(file));
     setResult(null);
     setError('');
   };
 
-  // ক্লায়েন্ট-সাইডে ছবি রিসাইজ করে ব্লব রিটার্ন করে
+  // ছবি রিসাইজ (আগের মতোই)
   const resizeImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -62,7 +61,6 @@ export default function CropDiseasePage() {
   };
 
   const handleSubmit = async () => {
-    // লগইন চেক
     if (!user) {
       const currentPath = '/crop-disease';
       router.push(`/auth?mode=login&redirect=${encodeURIComponent(currentPath)}`);
@@ -74,41 +72,30 @@ export default function CropDiseasePage() {
     setError('');
 
     try {
-      // ছবি রিসাইজ করো
+      // রিসাইজ
       const resizedBlob = await resizeImage(selectedFile);
 
-      // রিসাইজ করা ব্লবকে বেস64-তে রূপান্তর
+      // বেস64 বানাও
       const reader = new FileReader();
       reader.readAsDataURL(resizedBlob);
       reader.onload = async () => {
         const base64Image = reader.result.split(',')[1];
 
-        // আমাদের নিজস্ব API প্রক্সিতে কল
-        const response = await fetch('/api/detect-disease', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64Image }),
-        });
+        // 🆕 Server Action কল
+        const data = await detectDisease(base64Image);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'API ত্রুটি');
-        }
-
-        if (Array.isArray(data) && data.length > 0) {
-          const topPrediction = data[0];
-          setResult({
-            label: topPrediction.label,
-            confidence: (topPrediction.score * 100).toFixed(2),
-          });
+        if (data.error) {
+          setError(data.error);
         } else {
-          setResult({ label: 'অজানা', confidence: 0 });
+          setResult({
+            label: data.label,
+            confidence: data.confidence,
+          });
         }
         setLoading(false);
       };
     } catch (err) {
-      setError(err.message || 'রোগ নির্ণয়ে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      setError('ছবি প্রক্রিয়াকরণে সমস্যা হয়েছে।');
       setLoading(false);
     }
   };

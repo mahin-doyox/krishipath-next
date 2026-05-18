@@ -23,14 +23,14 @@ export async function detectDisease(imageBase64) {
         }
       );
 
-      // মডেল লোডিং বা সার্ভার ব্যস্ততায় পুনরায় চেষ্টা
-      if (response.status === 503 || response.status === 429 || response.status === 502 || response.status === 500) {
+      // সার্ভার ব্যস্ত বা মডেল লোডিং — অপেক্ষা করে পুনঃচেষ্টা
+      if ([503, 429, 502, 500].includes(response.status)) {
         const errorData = await response.json().catch(() => ({}));
         const msg = errorData.error || response.statusText;
-        console.log(`HF API attempt ${attempt}: ${response.status} - ${msg}`);
+        console.log(`[HF] Attempt ${attempt}: ${response.status} - ${msg}`);
         lastError = msg || 'সার্ভার ব্যস্ত, আবার চেষ্টা করুন...';
         if (attempt < 3) {
-          await new Promise(r => setTimeout(r, 6000)); // ৬ সেকেন্ড অপেক্ষা
+          await new Promise(r => setTimeout(r, 6000)); // ৬ সেকেন্ড
           continue;
         }
         return { error: lastError };
@@ -39,7 +39,7 @@ export async function detectDisease(imageBase64) {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const msg = errorData.error || 'হাগিং ফেস API ত্রুটি';
-        console.error('HF API error:', msg);
+        console.error('[HF] Error:', msg);
         return { error: msg };
       }
 
@@ -53,7 +53,7 @@ export async function detectDisease(imageBase64) {
       }
       return { error: 'কোনো রোগ শনাক্ত করা যায়নি' };
     } catch (err) {
-      console.error('Network error:', err.message);
+      console.error('[HF] Network error:', err.message);
       lastError = err.message;
       if (attempt === 3) break;
       await new Promise(r => setTimeout(r, 4000));

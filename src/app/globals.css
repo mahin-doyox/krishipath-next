@@ -100,7 +100,7 @@ h1, h2, h3 {
 }
 .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 
-/* LOGO ক্লিন – কোনো বর্ডার, শ্যাডো, রেডিয়াস নেই */
+/* LOGO – কোনো বর্ডার, শ্যাডো, রেডিয়াস নেই */
 .logo img {
   height: 44px;
   width: auto;
@@ -460,7 +460,19 @@ footer {
   background: #111418;
 }
 
-/* ---------- SKELETON ---------- */
+/* ---------- ANSWER BOX ---------- */
+.answer-box {
+  background: #f8faf5;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+[data-theme='dark'] .answer-box {
+  background: #2a2e35;
+  border-color: #444;
+  color: #e2e2e2;
+}
+
+/* ---------- SKELETON LOADING ---------- */
 .skeleton {
   background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
   background-size: 200px 100%;
@@ -476,15 +488,4 @@ footer {
 .skeleton-card {
   height: 200px;
   margin-bottom: 1rem;
-}
-/* ---------- ANSWER BOX ---------- */
-.answer-box {
-  background: #f8faf5;
-  border: 1px solid rgba(0,0,0,0.04);
-}
-
-[data-theme='dark'] .answer-box {
-  background: #2a2e35;
-  border-color: #444;
-  color: #e2e2e2;
 }

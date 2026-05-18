@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function AuthPage() {
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode') || 'login';
+  const redirectTo = searchParams.get('redirect') || '/';  // ✅ redirect প্যারামিটার
   const router = useRouter();
   const { supabase } = useAuth();
   const [email, setEmail] = useState('');
@@ -27,12 +28,12 @@ export default function AuthPage() {
       if (data.user) {
         await supabase.from('profiles').insert([{ id: data.user.id, name, phone, role, email }]);
         alert('রেজিস্ট্রেশন সফল! এখন লগইন করুন।');
-        router.push('/auth?mode=login');
+        router.push(`/auth?mode=login&redirect=${encodeURIComponent(redirectTo)}`);
       }
     } else {
       const { data, error: logErr } = await supabase.auth.signInWithPassword({ email, password });
       if (logErr) return setError(logErr.message);
-      router.push('/');
+      router.push(redirectTo);   // ✅ লগইন সফল হলে এখানে ফিরবে
     }
   };
 
@@ -78,7 +79,9 @@ export default function AuthPage() {
         <p style={{ marginTop: '1.5rem', textAlign: 'center' }}>
           {!showForgot ? (
             <>
-              <Link href={`/auth?mode=${mode === 'login' ? 'register' : 'login'}`}>{mode === 'login' ? 'রেজিস্টার করুন' : 'লগইন করুন'}</Link> |{' '}
+              <Link href={`/auth?mode=${mode === 'login' ? 'register' : 'login'}&redirect=${encodeURIComponent(redirectTo)}`}>
+                {mode === 'login' ? 'রেজিস্টার করুন' : 'লগইন করুন'}
+              </Link> |{' '}
               <a href="#" onClick={() => setShowForgot(true)}>পাসওয়ার্ড ভুলে গেছেন?</a>
             </>
           ) : (

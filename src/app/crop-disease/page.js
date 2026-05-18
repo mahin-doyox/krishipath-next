@@ -13,7 +13,6 @@ export default function CropDiseasePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ফর্মটি সবার জন্য দৃশ্যমান, শুধু সাবমিট করলে অথেনটিকেশন চেক হবে
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -24,9 +23,7 @@ export default function CropDiseasePage() {
   };
 
   const handleSubmit = async () => {
-    // লগইন চেক
     if (!user) {
-      // বর্তমান URL এনকোড করে লগইন পেজে পাঠিয়ে দাও
       const currentPath = '/crop-disease';
       router.push(`/auth?mode=login&redirect=${encodeURIComponent(currentPath)}`);
       return;
@@ -41,19 +38,16 @@ export default function CropDiseasePage() {
       reader.readAsDataURL(selectedFile);
       reader.onload = async () => {
         const base64Image = reader.result.split(',')[1];
-        const response = await fetch(
-          'https://api-inference.huggingface.co/models/adityasalian/plant-disease-detection',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${process.env.NEXT_PUBLIC_HF_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ inputs: base64Image }),
-          }
-        );
+
+        // 🔁 এখন আমাদের নিজস্ব API কল করছে
+        const response = await fetch('/api/detect-disease', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64Image }),
+        });
 
         const data = await response.json();
+
         if (!response.ok) {
           throw new Error(data.error || 'API ত্রুটি');
         }
@@ -70,7 +64,7 @@ export default function CropDiseasePage() {
         setLoading(false);
       };
     } catch (err) {
-      setError('রোগ নির্ণয়ে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      setError(err.message || 'রোগ নির্ণয়ে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
       setLoading(false);
     }
   };

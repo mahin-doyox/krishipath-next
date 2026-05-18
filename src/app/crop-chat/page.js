@@ -13,7 +13,6 @@ export default function CropChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const chatEndRef = useRef(null);
-  const [navHeight, setNavHeight] = useState(0);
 
   // হিস্টরি লোড
   useEffect(() => {
@@ -26,17 +25,6 @@ export default function CropChatPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chats]);
-
-  // নিচের মোবাইল নেভিগেশন বারের উচ্চতা মাপি
-  useEffect(() => {
-    const updateNavHeight = () => {
-      const el = document.querySelector('.mobile-bottom-nav');
-      setNavHeight(el ? el.offsetHeight : 0);
-    };
-    updateNavHeight();
-    window.addEventListener('resize', updateNavHeight);
-    return () => window.removeEventListener('resize', updateNavHeight);
-  }, []);
 
   const handleSend = async () => {
     if (!user) {
@@ -74,57 +62,38 @@ export default function CropChatPage() {
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: navHeight,   // নিচের নেভের জায়গা বাদ
-      display: 'flex',
-      flexDirection: 'column',
-      background: '#f2f9f2',
-      zIndex: 500,
-      maxWidth: '700px',
-      margin: '0 auto',
-      padding: '0.5rem 1rem 0',
-    }}>
-      {/* হেডার */}
-      <div style={{ flexShrink: 0, paddingBottom: '0.5rem' }}>
-        <h2 className="section-title" style={{ fontSize: '1.5rem', margin: '0.5rem 0' }}>
-          💬 কৃষি পরামর্শ চ্যাট
-        </h2>
-      </div>
+    <div className="container" style={{ padding: '2rem 0', maxWidth: '700px' }}>
+      <h2 className="section-title">💬 কৃষি পরামর্শ চ্যাট</h2>
 
       {!user && (
-        <div style={{ flexShrink: 0 }}>
-          <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
-            <p>⚠️ এই ফিচারটি ব্যবহার করতে লগইন করুন।</p>
-            <Link href={`/auth?mode=login&redirect=${encodeURIComponent('/crop-chat')}`} className="btn btn-primary btn-sm">
-              লগইন / রেজিস্টার
-            </Link>
-          </div>
+        <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <p>⚠️ এই ফিচারটি ব্যবহার করতে লগইন করুন।</p>
+          <Link href={`/auth?mode=login&redirect=${encodeURIComponent('/crop-chat')}`} className="btn btn-primary btn-sm">
+            লগইন / রেজিস্টার
+          </Link>
         </div>
       )}
 
-      {/* চ্যাট মেসেজ এরিয়া — এখন স্ক্রলেবল */}
+      {/* চ্যাট এরিয়া */}
       <div
         style={{
-          flex: 1,
+          background: 'var(--white)',
+          borderRadius: '20px',
+          padding: '1.2rem',
+          minHeight: '400px',
+          maxHeight: '500px',
           overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.8rem',
-          paddingBottom: '0.5rem',
-          minHeight: 0, // flex child-এর জন্য গুরুত্বপূর্ণ
+          boxShadow: 'var(--shadow-sm)',
+          marginBottom: '1rem',
         }}
       >
         {chats.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#888', marginTop: '4rem', padding: '0 1rem' }}>
+          <p style={{ textAlign: 'center', color: '#888', marginTop: '5rem' }}>
             👋 স্বাগতম! আপনার ফসলের রোগের নাম লিখুন, ওষুধ ও পরামর্শ জানুন।
           </p>
         )}
         {chats.map((chat) => (
-          <div key={chat.id}>
+          <div key={chat.id} style={{ marginBottom: '1.2rem' }}>
             {/* ইউজার মেসেজ */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.4rem' }}>
               <div
@@ -135,7 +104,6 @@ export default function CropChatPage() {
                   borderRadius: '18px 18px 4px 18px',
                   maxWidth: '80%',
                   fontSize: '0.95rem',
-                  wordBreak: 'break-word',
                 }}
               >
                 {chat.message}
@@ -152,7 +120,6 @@ export default function CropChatPage() {
                   maxWidth: '80%',
                   fontSize: '0.95rem',
                   whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
                 }}
               >
                 {chat.reply}
@@ -163,58 +130,28 @@ export default function CropChatPage() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* ইনপুট এরিয়া — নিচে স্থির */}
+      {/* ইনপুট এরিয়া */}
       {user && (
-        <div
-          style={{
-            flexShrink: 0,
-            padding: '0.8rem 0',
-            borderTop: '1px solid rgba(0,0,0,0.05)',
-            display: 'flex',
-            gap: '0.5rem',
-            alignItems: 'center',
-          }}
-        >
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
           <input
             type="text"
-            placeholder="রোগের নাম লিখুন..."
+            className="form-control"
+            placeholder="রোগের নাম লিখুন (যেমন: ধানের ব্লাস্ট রোগ)..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              padding: '12px 16px',
-              borderRadius: '24px',
-              border: '2px solid #d1e7dd',
-              fontSize: '16px',
-              outline: 'none',
-              background: 'white',
-              color: 'var(--primary)',
-            }}
+            style={{ flex: 1 }}
           />
           <button
+            className="btn btn-primary"
             onClick={handleSend}
             disabled={!message.trim() || loading}
-            style={{
-              padding: '10px 16px',
-              borderRadius: '24px',
-              background: 'var(--primary)',
-              color: 'white',
-              border: 'none',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
           >
-            {loading ? '•••' : 'পাঠান'}
+            {loading ? '...' : 'পাঠান'}
           </button>
         </div>
       )}
-      {error && (
-        <p style={{ color: 'red', textAlign: 'center', flexShrink: 0, marginTop: '0.5rem' }}>{error}</p>
-      )}
+      {error && <p style={{ color: 'red', marginTop: '0.5rem', textAlign: 'center' }}>{error}</p>}
     </div>
   );
 }

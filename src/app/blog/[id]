@@ -1,51 +1,45 @@
-'use client';
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'default-no-store';
 
-import { useEffect, useState } from 'react';
-import { useParams, notFound } from 'next/navigation';
-import { createClientBrowser } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 
-export default function BlogDetailPage() {
-  const params = useParams();
-  const [blog, setBlog] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClientBrowser();
+export async function generateMetadata({ params }) {
+  const supabase = await createClient();
+  const { data: blog } = await supabase
+    .from('blogs')
+    .select('*')
+    .eq('id', params.id)
+    .maybeSingle();
 
-  useEffect(() => {
-    const fetchBlog = async () => {
-      const { data } = await supabase
-        .from('blogs')
-        .select('*')
-        .eq('id', params.id)
-        .maybeSingle();
-      setBlog(data);
-      setLoading(false);
-    };
-    fetchBlog();
-  }, [params.id, supabase]);
-
-  // SEO মেটাডাটা সরাসরি ক্লায়েন্ট থেকে দেওয়া সম্ভব নয়, তবে layout.tsx-এ ডিফল্ট মেটাডাটা থাকবে।
-  // আমরা এখানে document.title সেট করতে পারি
-  useEffect(() => {
-    if (blog) {
-      document.title = `${blog.title} - কৃষিপথ ব্লগ`;
-    }
-  }, [blog]);
-
-  if (loading) {
-    return (
-      <div className="container" style={{ padding: '2rem 0' }}>
-        <div className="feature-card skeleton-card">
-          <div className="skeleton" style={{ width: '80%', height: '2rem', marginBottom: '1rem' }}></div>
-          <div className="skeleton" style={{ width: '60%', height: '1rem', marginBottom: '1rem' }}></div>
-          <div className="skeleton" style={{ width: '100%', height: '10rem' }}></div>
-        </div>
-      </div>
-    );
+  if (!blog) {
+    return { title: 'ব্লগ পাওয়া যায়নি' };
   }
 
+  return {
+    title: `${blog.title} - কৃষিপথ ব্লগ`,
+    description: blog.content?.slice(0, 160),
+  };
+}
+
+export default async function BlogDetailPage({ params }) {
+  const supabase = await createClient();
+  const { data: blog } = await supabase
+    .from('blogs')
+    .select('*')
+    .eq('id', params.id)
+    .maybeSingle();
+
+  // ব্লগ না থাকলে বা আনঅ্যাপ্রুভড থাকলে ৪০৪ ছাড়াই মেসেজ দেখাও
   if (!blog || !blog.approved) {
-    notFound();
-    return null;
+    return (
+      <div className="container" style={{ padding: '3rem 0', textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--primary)' }}>❌ ব্লগ পাওয়া যায়নি</h2>
+        <p>আপনি যে ব্লগটি খুঁজছেন, সেটি এখন আর উপলব্ধ নেই।</p>
+        <a href="/blog" className="btn btn-primary" style={{ marginTop: '1rem' }}>
+          সব ব্লগ দেখুন
+        </a>
+      </div>
+    );
   }
 
   return (

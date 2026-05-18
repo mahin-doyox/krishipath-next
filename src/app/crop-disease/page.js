@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { detectDisease } from '@/app/actions'; // 🆕 Server Action ইম্পোর্ট
+import { detectDisease } from '@/app/actions';
 
 export default function CropDiseasePage() {
   const { user } = useAuth();
@@ -78,7 +78,6 @@ export default function CropDiseasePage() {
       reader.onload = async () => {
         const base64Image = reader.result.split(',')[1];
 
-        // 🆕 এখানে আর /api/detect-disease নয়, সরাসরি Server Action কল
         const data = await detectDisease(base64Image);
 
         if (data.error) {

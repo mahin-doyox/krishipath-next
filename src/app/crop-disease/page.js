@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { detectDisease, saveScan, getUserScans } from '@/app/actions';
+import { detectDisease, saveScan, getUserScans, uploadScanImage } from '@/app/actions';
 
 export default function CropDiseasePage() {
   const { user } = useAuth();
@@ -82,8 +82,10 @@ export default function CropDiseasePage() {
           setError(data.error);
         } else {
           setResult(data);
-          // Supabase-এ সংরক্ষণ
-          await saveScan(user.id, preview, data.label, data.confidence);
+          // ছবি Supabase Storage-এ আপলোড করে স্থায়ী URL নাও
+          const permanentUrl = await uploadScanImage(base64Image, user.id);
+          // ডাটাবেজে স্থায়ী URL সংরক্ষণ করো
+          await saveScan(user.id, permanentUrl, data.label, data.confidence);
           // ইতিহাস আপডেট
           const updatedHistory = await getUserScans(user.id);
           setHistory(updatedHistory);
@@ -137,7 +139,9 @@ export default function CropDiseasePage() {
           <div className="card-grid">
             {history.map((scan) => (
               <div key={scan.id} className="feature-card" style={{ textAlign: 'left' }}>
-                <img src={scan.image_url} alt={scan.disease_label} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '12px' }} />
+                {scan.image_url && (
+                  <img src={scan.image_url} alt={scan.disease_label} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '12px' }} />
+                )}
                 <h4 style={{ marginTop: '0.5rem' }}>{scan.disease_label}</h4>
                 <small>বিশ্বাসযোগ্যতা: {scan.confidence}%</small>
                 <small style={{ display: 'block', color: '#888' }}>{new Date(scan.created_at).toLocaleDateString('bn-BD')}</small>

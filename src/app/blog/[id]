@@ -26,6 +26,7 @@ export default async function BlogDetailPage({ params }) {
     .eq('id', params.id)
     .maybeSingle();
 
+  // ‼️ গুরুত্বপূর্ণ: notFound() কল না করে, একটি সুন্দর UI রিটার্ন করো
   if (!blog || !blog.approved) {
     return (
       <div className="container" style={{ padding: '3rem 0', textAlign: 'center' }}>

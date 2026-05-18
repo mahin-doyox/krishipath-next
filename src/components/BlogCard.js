@@ -18,18 +18,21 @@ export default function BlogCard({ blog }) {
         .eq('item_type', 'blog')
         .eq('item_id', blog.id);
       setLikeCount(count || 0);
+
       if (user) {
         const { data } = await supabase
           .from('likes')
-          .select('*')
+          .select('id')
           .eq('user_id', user.id)
           .eq('item_type', 'blog')
           .eq('item_id', blog.id)
-          .single();
+          .limit(1)
+          .maybeSingle();
         setLiked(!!data);
       }
     };
     fetchLikes();
+
     const channel = supabase
       .channel(`blog-likes-${blog.id}`)
       .on(
@@ -38,6 +41,7 @@ export default function BlogCard({ blog }) {
         () => fetchLikes()
       )
       .subscribe();
+
     return () => supabase.removeChannel(channel);
   }, [blog.id, user, supabase]);
 
@@ -45,10 +49,20 @@ export default function BlogCard({ blog }) {
     if (!user) return alert('লাইক দিতে লগইন করুন।');
     if (loading) return;
     setLoading(true);
+
     if (liked) {
-      await supabase.from('likes').delete().eq('user_id', user.id).eq('item_type', 'blog').eq('item_id', blog.id);
+      await supabase
+        .from('likes')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('item_type', 'blog')
+        .eq('item_id', blog.id);
     } else {
-      await supabase.from('likes').insert({ user_id: user.id, item_type: 'blog', item_id: blog.id });
+      await supabase.from('likes').insert({
+        user_id: user.id,
+        item_type: 'blog',
+        item_id: blog.id,
+      });
     }
     setLoading(false);
   };
@@ -58,7 +72,9 @@ export default function BlogCard({ blog }) {
       <Link href={`/blog/${blog.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
         <h4>{blog.title}</h4>
       </Link>
-      <small>{blog.category} — {blog.user_name} • {getRelativeTime(blog.created_at)}</small>
+      <small>
+        {blog.category} — {blog.user_name} • {getRelativeTime(blog.created_at)}
+      </small>
       <div style={{ whiteSpace: 'pre-wrap', marginTop: '1rem' }}>{blog.content}</div>
       <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <button

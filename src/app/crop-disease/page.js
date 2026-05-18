@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { detectDisease } from '@/app/actions'; // 🆕 Server Action ইম্পোর্ট
+import { detectDisease } from '@/app/actions';
 
 export default function CropDiseasePage() {
   const { user } = useAuth();
@@ -23,7 +23,6 @@ export default function CropDiseasePage() {
     setError('');
   };
 
-  // ছবি রিসাইজ (আগের মতোই)
   const resizeImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -72,16 +71,13 @@ export default function CropDiseasePage() {
     setError('');
 
     try {
-      // রিসাইজ
       const resizedBlob = await resizeImage(selectedFile);
 
-      // বেস64 বানাও
       const reader = new FileReader();
       reader.readAsDataURL(resizedBlob);
       reader.onload = async () => {
         const base64Image = reader.result.split(',')[1];
 
-        // 🆕 Server Action কল
         const data = await detectDisease(base64Image);
 
         if (data.error) {

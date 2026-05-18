@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import BlogCard from '@/components/BlogCard';
+import BlogCardSkeleton from '@/components/BlogCardSkeleton';
 
 const categories = ['all', 'ফসল', 'মৎস্য', 'পশুপালন', 'জৈব সার'];
 
@@ -11,7 +12,16 @@ export default function BlogFilterClient({ blogs }) {
   const [title, setTitle] = useState('');
   const [blogCat, setBlogCat] = useState('ফসল');
   const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+
   const filtered = cat === 'all' ? blogs : blogs.filter(b => b.category === cat);
+
+  useEffect(() => {
+    // ব্লগ প্রপস পাওয়ার পর লোডিং শেষ
+    if (blogs && blogs.length >= 0) {
+      setLoading(false);
+    }
+  }, [blogs]);
 
   const uploadBlog = async () => {
     if (!user || !profile || (profile.role !== 'expert' && profile.role !== 'admin')) {
@@ -33,7 +43,7 @@ export default function BlogFilterClient({ blogs }) {
 
   return (
     <>
-      {/* ব্লগ আপলোড ফর্ম – শুধু expert ও admin দেখবে */}
+      {/* ব্লগ আপলোড ফর্ম */}
       {user && (profile?.role === 'expert' || profile?.role === 'admin') && (
         <div className="form-card">
           <h3>ব্লগ লিখুন</h3>
@@ -58,10 +68,20 @@ export default function BlogFilterClient({ blogs }) {
         ))}
       </div>
 
-      {/* ব্লগ তালিকা */}
-      <div className="card-grid">
-        {filtered.length > 0 ? filtered.map(blog => <BlogCard key={blog.id} blog={blog} />) : <p>কোনো ব্লগ নেই</p>}
-      </div>
+      {/* ব্লগ তালিকা অথবা স্কেলিটন */}
+      {loading ? (
+        <div className="card-grid">
+          <BlogCardSkeleton />
+          <BlogCardSkeleton />
+          <BlogCardSkeleton />
+        </div>
+      ) : filtered.length > 0 ? (
+        <div className="card-grid">
+          {filtered.map(blog => <BlogCard key={blog.id} blog={blog} />)}
+        </div>
+      ) : (
+        <p>কোনো ব্লগ নেই</p>
+      )}
     </>
   );
 }

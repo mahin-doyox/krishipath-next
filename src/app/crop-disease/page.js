@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function CropDiseasePage() {
   const { user } = useAuth();
@@ -12,12 +13,7 @@ export default function CropDiseasePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // যদি ইউজার লগইন না করে থাকে, তাহলে লগইন পেজে রিডাইরেক্ট
-  if (!user) {
-    router.push('/auth?mode=login');
-    return null; // অথবা একটি লোডিং দেখাতে পারো
-  }
-
+  // ফর্মটি সবার জন্য দৃশ্যমান, শুধু সাবমিট করলে অথেনটিকেশন চেক হবে
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -28,6 +24,14 @@ export default function CropDiseasePage() {
   };
 
   const handleSubmit = async () => {
+    // লগইন চেক
+    if (!user) {
+      // বর্তমান URL এনকোড করে লগইন পেজে পাঠিয়ে দাও
+      const currentPath = '/crop-disease';
+      router.push(`/auth?mode=login&redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
     if (!selectedFile) return alert('দয়া করে ছবি নির্বাচন করুন');
     setLoading(true);
     setError('');
@@ -74,6 +78,14 @@ export default function CropDiseasePage() {
   return (
     <div className="container" style={{ padding: '2rem 0' }}>
       <h2 className="section-title">🔍 ফসলের রোগ নির্ণয়</h2>
+      {!user && (
+        <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <p>⚠️ এই ফিচারটি ব্যবহার করতে লগইন করুন।</p>
+          <Link href={`/auth?mode=login&redirect=${encodeURIComponent('/crop-disease')}`} className="btn btn-primary btn-sm">
+            লগইন / রেজিস্টার
+          </Link>
+        </div>
+      )}
       <div className="form-card">
         <div className="form-group">
           <label>ফসলের পাতা বা আক্রান্ত অংশের ছবি আপলোড করুন</label>

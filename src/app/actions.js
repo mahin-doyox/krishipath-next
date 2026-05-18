@@ -45,7 +45,7 @@ export async function detectDisease(imageBase64) {
 }
 
 // ======================================================================
-// 📤 ছবি Supabase Storage-এ আপলোড
+// 📤 ছবি Supabase Storage-এ আপলোড (স্ক্যান ইতিহাসের জন্য)
 // ======================================================================
 export async function uploadScanImage(base64Image, userId) {
   const supabase = await createClient();
@@ -80,7 +80,7 @@ export async function uploadScanImage(base64Image, userId) {
 }
 
 // ======================================================================
-// 💾 স্ক্যান ইতিহাস
+// 💾 স্ক্যান ইতিহাস সংরক্ষণ ও পড়া
 // ======================================================================
 export async function saveScan(userId, imageUrl, diseaseLabel, confidence) {
   const supabase = await createClient();
@@ -110,7 +110,7 @@ export async function getUserScans(userId) {
 }
 
 // ======================================================================
-// 💬 কৃষি চ্যাট (Groq Cloud – Llama 3)
+// 💬 কৃষি চ্যাট (Groq Cloud – Llama 3.3 70B, সম্পূর্ণ ফ্রি)
 // ======================================================================
 export async function sendChatMessage(userId, message) {
   const apiKey = process.env.GROQ_API_KEY;
@@ -137,7 +137,7 @@ export async function sendChatMessage(userId, message) {
           },
         ],
         temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 1500,   // সম্পূর্ণ উত্তরের জন্য পর্যাপ্ত
       }),
     });
 
@@ -147,9 +147,15 @@ export async function sendChatMessage(userId, message) {
     }
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || 'কোনো উত্তর পাওয়া যায়নি';
+    const choice = data.choices?.[0];
+    const reply = choice?.message?.content || 'কোনো উত্তর পাওয়া যায়নি';
 
-    // হিস্টরি সংরক্ষণ
+    // finish_reason চেক (length হলে টোকেনে কাটা পড়েছে)
+    if (choice?.finish_reason === 'length') {
+      console.warn('[Groq] Response truncated due to token limit');
+    }
+
+    // হিস্টরি Supabase-এ সংরক্ষণ
     const supabase = await createClient();
     await supabase.from('crop_chats').insert({
       user_id: userId,

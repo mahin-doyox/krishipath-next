@@ -29,7 +29,6 @@ export default function ForumClient({ questions }) {
         .eq('approved', true)
         .order('created_at', { ascending: true });
       setAnswersMap((prev) => ({ ...prev, [q.id]: ans || [] }));
-
       ans?.forEach((a) => {
         supabase
           .from('likes')
@@ -37,7 +36,6 @@ export default function ForumClient({ questions }) {
           .eq('item_type', 'answer')
           .eq('item_id', a.id)
           .then(({ count }) => setLikeCounts((prev) => ({ ...prev, [a.id]: count || 0 })));
-
         if (user) {
           supabase
             .from('likes')
@@ -69,7 +67,6 @@ export default function ForumClient({ questions }) {
         }
       )
       .subscribe();
-
     return () => supabase.removeChannel(channel);
   }, [supabase]);
 
@@ -150,7 +147,7 @@ export default function ForumClient({ questions }) {
           <div className="mt-3">
             <strong>উত্তর ({(answersMap[q.id] || []).length}):</strong>
             {(answersMap[q.id] || []).map(a => (
-              <div key={a.id} style={{ marginBottom: '0.8rem', padding: '0.5rem', background: '#f8faf5', borderRadius: '12px' }}>
+              <div key={a.id} className="answer-box" style={{ marginBottom: '0.8rem', padding: '0.8rem', borderRadius: '12px' }}>
                 <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{a.answer}</p>
                 <small>— {a.user_name} • {getRelativeTime(a.created_at)}</small>
                 <div style={{ marginTop: '0.3rem' }}>

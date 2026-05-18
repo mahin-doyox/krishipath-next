@@ -35,7 +35,6 @@ export default function CropChatPage() {
     setLoading(true);
     setError('');
 
-    // ইউজারের মেসেজ সঙ্গে সঙ্গে দেখাবে
     const userMsg = message.trim();
     setChats(prev => [...prev, { id: Date.now(), message: userMsg, reply: '...' }]);
     setMessage('');
@@ -44,10 +43,8 @@ export default function CropChatPage() {
 
     if (data.error) {
       setError(data.error);
-      // শেষ মেসেজটি সরিয়ে দাও বা এরর দেখাও
       setChats(prev => prev.filter(c => c.reply !== '...'));
     } else {
-      // শেষ মেসেজের reply আপডেট করো
       setChats(prev =>
         prev.map(c =>
           c.reply === '...' ? { ...c, reply: data.reply } : c
@@ -65,8 +62,15 @@ export default function CropChatPage() {
   };
 
   return (
-    <div className="container" style={{ padding: '2rem 0', maxWidth: '700px' }}>
-      <h2 className="section-title">💬 কৃষি পরামর্শ চ্যাট</h2>
+    <div style={{
+      maxWidth: '700px',
+      margin: '0 auto',
+      padding: '1rem',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <h2 className="section-title" style={{ fontSize: '1.6rem', marginBottom: '1rem' }}>💬 কৃষি পরামর্শ চ্যাট</h2>
 
       {!user && (
         <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
@@ -80,23 +84,27 @@ export default function CropChatPage() {
       {/* চ্যাট এরিয়া */}
       <div
         style={{
+          flex: 1,
           background: 'var(--white)',
           borderRadius: '20px',
           padding: '1.2rem',
-          minHeight: '400px',
-          maxHeight: '500px',
           overflowY: 'auto',
           boxShadow: 'var(--shadow-sm)',
           marginBottom: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          minHeight: '400px',
+          maxHeight: 'calc(100vh - 250px)',
         }}
       >
         {chats.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#888', marginTop: '5rem' }}>
+          <p style={{ textAlign: 'center', color: '#888', marginTop: '5rem', padding: '0 1rem' }}>
             👋 স্বাগতম! আপনার ফসলের রোগের নাম লিখুন, ওষুধ ও পরামর্শ জানুন।
           </p>
         )}
         {chats.map((chat) => (
-          <div key={chat.id} style={{ marginBottom: '1.2rem' }}>
+          <div key={chat.id}>
             {/* ইউজার মেসেজ */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.4rem' }}>
               <div
@@ -105,8 +113,9 @@ export default function CropChatPage() {
                   color: 'white',
                   padding: '0.7rem 1rem',
                   borderRadius: '18px 18px 4px 18px',
-                  maxWidth: '80%',
+                  maxWidth: '85%',
                   fontSize: '0.95rem',
+                  wordBreak: 'break-word',
                 }}
               >
                 {chat.message}
@@ -120,9 +129,10 @@ export default function CropChatPage() {
                   color: 'var(--primary)',
                   padding: '0.7rem 1rem',
                   borderRadius: '18px 18px 18px 4px',
-                  maxWidth: '80%',
+                  maxWidth: '85%',
                   fontSize: '0.95rem',
                   whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
                 }}
               >
                 {chat.reply}
@@ -135,7 +145,17 @@ export default function CropChatPage() {
 
       {/* ইনপুট এরিয়া */}
       {user && (
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{
+          display: 'flex',
+          gap: '0.5rem',
+          alignItems: 'center',
+          padding: '0.5rem 0',
+          position: 'sticky',
+          bottom: 0,
+          background: '#f2f9f2',
+          borderRadius: '12px',
+          paddingBottom: '0.8rem',
+        }}>
           <input
             type="text"
             className="form-control"
@@ -143,12 +163,26 @@ export default function CropChatPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            style={{ flex: 1 }}
+            style={{
+              flex: 1,
+              padding: '12px 16px',
+              borderRadius: '25px',
+              border: '2px solid #d1e7dd',
+              fontSize: '1rem',
+              outline: 'none',
+              minWidth: 0, // prevent overflow
+            }}
           />
           <button
             className="btn btn-primary"
             onClick={handleSend}
             disabled={!message.trim() || loading}
+            style={{
+              padding: '12px 20px',
+              borderRadius: '25px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
           >
             {loading ? '...' : 'পাঠান'}
           </button>

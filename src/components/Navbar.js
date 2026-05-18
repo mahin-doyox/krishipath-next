@@ -107,9 +107,11 @@ export default function Navbar() {
           <Link href="/prices" className={pathname === '/prices' ? 'active' : ''}>
             বাজার দর
           </Link>
-          {/* 🧪 সবার জন্য দৃশ্যমান */}
           <Link href="/crop-disease" className={pathname === '/crop-disease' ? 'active' : ''}>
             🧪 রোগ নির্ণয়
+          </Link>
+          <Link href="/crop-chat" className={pathname === '/crop-chat' ? 'active' : ''}>
+            💬 কৃষি চ্যাট
           </Link>
           {user && (
             <>
@@ -148,10 +150,13 @@ export default function Navbar() {
           <i className="fas fa-chart-line"></i>
           <span>দর</span>
         </Link>
-        {/* 🧪 সবার জন্য দৃশ্যমান */}
         <Link href="/crop-disease" className={pathname === '/crop-disease' ? 'active' : ''}>
           <i className="fas fa-microscope"></i>
           <span>রোগ</span>
+        </Link>
+        <Link href="/crop-chat" className={pathname === '/crop-chat' ? 'active' : ''}>
+          <i className="fas fa-robot"></i>
+          <span>চ্যাট</span>
         </Link>
         {user && (
           <>

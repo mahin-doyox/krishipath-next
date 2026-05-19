@@ -10,39 +10,63 @@ export default function TodaysBest() {
   const [latestBlog, setLatestBlog] = useState(null);
   const [topQuestion, setTopQuestion] = useState(null);
 
+  // ফেচ ফাংশন
+  const fetchData = async () => {
+    // সর্বোচ্চ দামের ফসল
+    const { data: price } = await supabase
+      .from('agent_prices')
+      .select('*')
+      .eq('approved', true)
+      .order('price', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setTopPrice(price);
+
+    // সর্বশেষ ব্লগ
+    const { data: blog } = await supabase
+      .from('blogs')
+      .select('*')
+      .eq('approved', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLatestBlog(blog);
+
+    // সর্বশেষ প্রশ্ন
+    const { data: question } = await supabase
+      .from('forum_questions')
+      .select('*')
+      .eq('approved', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setTopQuestion(question);
+  };
+
   useEffect(() => {
-    const fetch = async () => {
-      // সর্বোচ্চ দামের ফসল
-      const { data: price } = await supabase
-        .from('agent_prices')
-        .select('*')
-        .eq('approved', true)
-        .order('price', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setTopPrice(price);
+    fetchData();
 
-      // সর্বশেষ ব্লগ
-      const { data: blog } = await supabase
-        .from('blogs')
-        .select('*')
-        .eq('approved', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setLatestBlog(blog);
+    // রিয়েল-টাইম সাবস্ক্রিপশন
+    const channel = supabase
+      .channel('todays-best-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'agent_prices' },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'blogs' },
+        () => fetchData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'forum_questions' },
+        () => fetchData()
+      )
+      .subscribe();
 
-      // সর্বশেষ প্রশ্ন
-      const { data: question } = await supabase
-        .from('forum_questions')
-        .select('*')
-        .eq('approved', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setTopQuestion(question);
-    };
-    fetch();
+    return () => supabase.removeChannel(channel);
   }, [supabase]);
 
   return (

@@ -11,8 +11,10 @@ export default function Navbar() {
   const [notifCount, setNotifCount] = useState(0);
   const pathname = usePathname();
 
+  // নোটিফিকেশন কাউন্ট আপডেট – রিয়েল-টাইম ছাড়াই
   useEffect(() => {
     if (!user) return;
+
     const getCount = async () => {
       const { count } = await supabase
         .from('notifications')
@@ -21,23 +23,21 @@ export default function Navbar() {
         .eq('read', false);
       setNotifCount(count || 0);
     };
+
+    // প্রথমবার কাউন্ট নাও
     getCount();
 
-    const channel = supabase
-      .channel('notif-count')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => setNotifCount((prev) => prev + 1)
-      )
-      .subscribe();
+    // প্রতি ৩০ সেকেন্ডে কাউন্ট রিফ্রেশ করো (অথবা ইউজার পেজে ফোকাস করলে)
+    const interval = setInterval(getCount, 30000);
 
-    return () => supabase.removeChannel(channel);
+    // ইউজার ট্যাবে ফিরলে সাথে সাথে কাউন্ট নাও
+    const onFocus = () => getCount();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [user, supabase]);
 
   const handleLogout = async () => {
@@ -46,7 +46,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* ---- TOP BAR (মোবাইলে উপরে, ডেস্কটপে স্টিকি) ---- */}
+      {/* ---- TOP BAR ---- */}
       <nav className="navbar">
         <div className="logo" onClick={() => (window.location.href = '/')}>
           <img
@@ -89,7 +89,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ---- DESKTOP NAV LINKS (শুধু ডেস্কটপে দৃশ্যমান) ---- */}
+      {/* ---- DESKTOP NAV LINKS ---- */}
       <div className="desktop-nav">
         <div className="nav-links">
           <Link href="/" className={pathname === '/' ? 'active' : ''}>
@@ -128,7 +128,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ---- MOBILE BOTTOM NAV (শুধু মোবাইলে) ---- */}
+      {/* ---- MOBILE BOTTOM NAV ---- */}
       <div className="mobile-bottom-nav">
         <Link href="/" className={pathname === '/' ? 'active' : ''}>
           <i className="fas fa-home"></i>

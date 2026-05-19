@@ -10,13 +10,16 @@ export default function TodaysBest() {
   const [latestBlog, setLatestBlog] = useState(null);
   const [topQuestion, setTopQuestion] = useState(null);
 
-  // ফেচ ফাংশন
   const fetchData = async () => {
-    // সর্বোচ্চ দামের ফসল
+    // আজকের শুরুর সময় (গত ২৪ ঘণ্টা)
+    const todayStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    // আজকের সর্বোচ্চ দামের ফসল
     const { data: price } = await supabase
       .from('agent_prices')
       .select('*')
       .eq('approved', true)
+      .gte('created_at', todayStart)   // ✅ আজকের ডেটা ফিল্টার
       .order('price', { ascending: false })
       .limit(1)
       .maybeSingle();

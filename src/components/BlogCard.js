@@ -11,7 +11,6 @@ export default function BlogCard({ blog }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let channel;
     const fetchLikes = async () => {
       try {
         const { count } = await supabase
@@ -38,23 +37,8 @@ export default function BlogCard({ blog }) {
     };
 
     fetchLikes();
-
-    try {
-      channel = supabase
-        .channel(`blog-likes-${blog.id}`)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'likes', filter: `item_type=eq.blog&item_id=eq.${blog.id}` },
-          () => fetchLikes()
-        )
-        .subscribe();
-    } catch (err) {
-      console.warn('Blog like subscription failed:', err.message);
-    }
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchLikes, 30000);
+    return () => clearInterval(interval);
   }, [blog.id, user, supabase]);
 
   const toggleLike = async () => {
@@ -93,9 +77,10 @@ export default function BlogCard({ blog }) {
 
   return (
     <div className="feature-card" style={{ textAlign: 'left' }}>
-      <Link href={`/blog/${blog.id}`} prefetch={false} style={{ textDecoration: 'none', color: 'inherit' }}>
+      {/* 🔗 সাধারণ <a> ট্যাগ ব্যবহার করছি, Link নয় */}
+      <a href={`/blog/${blog.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
         <h4 style={{ fontSize: '1.2rem', marginBottom: '0.3rem' }}>{blog.title}</h4>
-      </Link>
+      </a>
       <small style={{ color: '#666', display: 'block', marginBottom: '0.5rem' }}>
         {blog.category} — {blog.user_name} • {getRelativeTime(blog.created_at)}
       </small>
@@ -103,7 +88,7 @@ export default function BlogCard({ blog }) {
         {previewContent}
       </div>
       {blog.content?.length > 300 && (
-        <Link 
+        <a 
           href={`/blog/${blog.id}`} 
           style={{ 
             color: 'var(--primary)', 
@@ -115,7 +100,7 @@ export default function BlogCard({ blog }) {
           }}
         >
           বিস্তারিত পড়ুন →
-        </Link>
+        </a>
       )}
       <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <button

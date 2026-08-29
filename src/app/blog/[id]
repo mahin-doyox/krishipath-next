@@ -15,11 +15,6 @@ export async function generateMetadata({ params }) {
   return {
     title: `${blog.title} - কৃষিপথ ব্লগ`,
     description: blog.content?.slice(0, 160),
-    openGraph: {
-      title: blog.title,
-      description: blog.content?.slice(0, 160),
-      type: 'article',
-    },
   };
 }
 

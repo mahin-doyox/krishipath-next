@@ -14,12 +14,26 @@ export default function CropDiseasePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      getUserScans(user.id).then(setHistory);
+      getHistory();
+    } else {
+      setHistoryLoading(false);
     }
   }, [user]);
+
+  const getHistory = async () => {
+    try {
+      const scans = await getUserScans(user.id);
+      setHistory(scans || []);
+    } catch (err) {
+      console.error('History fetch error:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -68,9 +82,10 @@ export default function CropDiseasePage() {
       router.push(`/auth?mode=login&redirect=${encodeURIComponent('/crop-disease')}`);
       return;
     }
-    if (!selectedFile) return alert('দয়া করে ছবি নির্বাচন করুন');
+    if (!selectedFile) return alert('দয়া করে ছবি নির্বাচন করুন');
     setLoading(true);
     setError('');
+
     try {
       const resizedBlob = await resizeImage(selectedFile);
       const reader = new FileReader();
@@ -80,16 +95,17 @@ export default function CropDiseasePage() {
         const data = await detectDisease(base64Image);
         if (data.error) {
           setError(data.error);
-        } else {
-          setResult(data);
-          // ছবি Supabase Storage-এ আপলোড করে স্থায়ী URL নাও
-          const permanentUrl = await uploadScanImage(base64Image, user.id);
-          // ডাটাবেজে স্থায়ী URL সংরক্ষণ করো
-          await saveScan(user.id, permanentUrl, data.label, data.confidence);
-          // ইতিহাস আপডেট
-          const updatedHistory = await getUserScans(user.id);
-          setHistory(updatedHistory);
+          setLoading(false);
+          return;
         }
+
+        setResult(data);
+        // ছবি Supabase Storage-এ আপলোড করে স্থায়ী URL নাও
+        const permanentUrl = await uploadScanImage(base64Image, user.id);
+        // ডাটাবেজে স্থায়ী URL সংরক্ষণ করো
+        await saveScan(user.id, permanentUrl, data.label, data.confidence);
+        // ইতিহাস আপডেট
+        await getHistory();
         setLoading(false);
       };
     } catch (err) {
@@ -99,56 +115,96 @@ export default function CropDiseasePage() {
   };
 
   return (
-    <div className="container" style={{ padding: '2rem 0' }}>
-      <h2 className="section-title">🔍 ফসলের রোগ নির্ণয়</h2>
-      {!user && (
+    <div className="container" style={{ padding: '1.5rem 0 2rem', maxWidth: '700px', margin: '0 auto' }}>
+      <h2 className="section-title" style={{ fontSize: 'clamp(1.5rem,4vw,2rem)' }}>🔍 ফসলের রোগ নির্ণয়</h2>
+
+      {!user ? (
         <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
           <p>⚠️ এই ফিচারটি ব্যবহার করতে লগইন করুন।</p>
           <Link href={`/auth?mode=login&redirect=${encodeURIComponent('/crop-disease')}`} className="btn btn-primary btn-sm">
             লগইন / রেজিস্টার
           </Link>
         </div>
-      )}
-      <div className="form-card">
-        <div className="form-group">
-          <label>ফসলের পাতা বা আক্রান্ত অংশের ছবি আপলোড করুন</label>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="form-control" style={{ padding: '10px' }} />
-        </div>
-        {preview && (
-          <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-            <img src={preview} alt="প্রিভিউ" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '12px', border: '1px solid #ccc' }} />
-          </div>
-        )}
-        <button className="btn btn-primary w-100 mt-3" onClick={handleSubmit} disabled={!selectedFile || loading}>
-          {loading ? 'নির্ণয় করা হচ্ছে...' : 'রোগ নির্ণয় করুন'}
-        </button>
-        {error && <p style={{ color: 'red', marginTop: '1rem', textAlign: 'center' }}>{error}</p>}
-        {result && (
-          <div className="stat-card" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-            <h3>🧬 নির্ণীত রোগ</h3>
-            <div className="value" style={{ fontSize: '1.8rem', color: 'var(--primary)' }}>{result.label}</div>
-            <div className="trend">বিশ্বাসযোগ্যতা: {result.confidence}%</div>
-          </div>
-        )}
-      </div>
-
-      {/* 📋 স্ক্যান ইতিহাস */}
-      {user && history.length > 0 && (
-        <div style={{ marginTop: '3rem' }}>
-          <h3 className="section-title">📋 আপনার স্ক্যান ইতিহাস</h3>
-          <div className="card-grid">
-            {history.map((scan) => (
-              <div key={scan.id} className="feature-card" style={{ textAlign: 'left' }}>
-                {scan.image_url && (
-                  <img src={scan.image_url} alt={scan.disease_label} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '12px' }} />
-                )}
-                <h4 style={{ marginTop: '0.5rem' }}>{scan.disease_label}</h4>
-                <small>বিশ্বাসযোগ্যতা: {scan.confidence}%</small>
-                <small style={{ display: 'block', color: '#888' }}>{new Date(scan.created_at).toLocaleDateString('bn-BD')}</small>
+      ) : (
+        <>
+          <div className="form-card">
+            <div className="form-group">
+              <label>ফসলের পাতা বা আক্রান্ত অংশের ছবি আপলোড করুন</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+                className="form-control" 
+                style={{ padding: '10px' }} 
+              />
+            </div>
+            {preview && (
+              <div style={{ textAlign: 'center', margin: '1rem 0' }}>
+                <img 
+                  src={preview} 
+                  alt="প্রিভিউ" 
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '250px', 
+                    borderRadius: '12px', 
+                    border: '1px solid #ccc',
+                    objectFit: 'cover'
+                  }} 
+                />
               </div>
-            ))}
+            )}
+            <button 
+              className="btn btn-primary w-100 mt-3" 
+              onClick={handleSubmit} 
+              disabled={!selectedFile || loading}
+            >
+              {loading ? 'নির্ণয় করা হচ্ছে...' : 'রোগ নির্ণয় করুন'}
+            </button>
+            {error && <p style={{ color: 'red', marginTop: '1rem', textAlign: 'center' }}>{error}</p>}
+            {result && (
+              <div className="stat-card" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                <h3>🧬 নির্ণীত রোগ</h3>
+                <div className="value" style={{ fontSize: '1.5rem', color: 'var(--primary)', wordBreak: 'break-word' }}>{result.label}</div>
+                <div className="trend">বিশ্বাসযোগ্যতা: {result.confidence}%</div>
+              </div>
+            )}
           </div>
-        </div>
+
+          {/* স্ক্যান ইতিহাস */}
+          <div style={{ marginTop: '2rem' }}>
+            <h3 className="section-title" style={{ fontSize: '1.3rem' }}>📋 আপনার স্ক্যান ইতিহাস</h3>
+            {historyLoading ? (
+              <p style={{ textAlign: 'center', color: '#888' }}>লোড হচ্ছে...</p>
+            ) : history.length > 0 ? (
+              <div className="card-grid">
+                {history.map((scan) => (
+                  <div key={scan.id} className="feature-card" style={{ textAlign: 'left' }}>
+                    {scan.image_url && (
+                      <img 
+                        src={scan.image_url} 
+                        alt={scan.disease_label} 
+                        style={{ 
+                          width: '100%', 
+                          height: '150px', 
+                          objectFit: 'cover', 
+                          borderRadius: '12px',
+                          marginBottom: '0.5rem'
+                        }} 
+                      />
+                    )}
+                    <h4 style={{ marginTop: '0.5rem', fontSize: '1.1rem' }}>{scan.disease_label}</h4>
+                    <small>বিশ্বাসযোগ্যতা: {scan.confidence}%</small>
+                    <small style={{ display: 'block', color: '#888' }}>
+                      {new Date(scan.created_at).toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ textAlign: 'center', color: '#888' }}>কোনো স্ক্যান ইতিহাস নেই</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

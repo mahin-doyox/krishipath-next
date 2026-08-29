@@ -13,11 +13,12 @@ export default function BlogFilterClient({ blogs }) {
   const [blogCat, setBlogCat] = useState('ফসল');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   const filtered = cat === 'all' ? blogs : blogs.filter(b => b.category === cat);
 
   useEffect(() => {
-    // ব্লগ প্রপস পাওয়ার পর লোডিং শেষ
+    // ব্লগ প্রপস পাওয়ার পর লোডিং শেষ
     if (blogs && blogs.length >= 0) {
       setLoading(false);
     }
@@ -27,42 +28,79 @@ export default function BlogFilterClient({ blogs }) {
     if (!user || !profile || (profile.role !== 'expert' && profile.role !== 'admin')) {
       return alert('আপনার এই কাজের অনুমতি নেই।');
     }
-    if (!title || !content) return alert('শিরোনাম ও লেখা দিন');
-    await supabase.from('blogs').insert([{
-      title,
-      category: blogCat,
-      content,
-      user_id: user.id,
-      user_name: profile.name,
-      approved: false
-    }]);
-    alert('জমা হয়েছে, অ্যাডমিন অনুমোদনের অপেক্ষায়।');
-    setTitle(''); setContent('');
-    window.location.reload();
+    if (!title.trim() || !content.trim()) return alert('শিরোনাম ও লেখা দিন');
+    
+    setUploading(true);
+    try {
+      const { error } = await supabase.from('blogs').insert([{
+        title: title.trim(),
+        category: blogCat,
+        content: content.trim(),
+        user_id: user.id,
+        user_name: profile.name,
+        approved: false
+      }]);
+      
+      if (error) {
+        alert('ব্লগ জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      } else {
+        alert('জমা হয়েছে, অ্যাডমিন অনুমোদনের অপেক্ষায়।');
+        setTitle('');
+        setContent('');
+        window.location.reload();
+      }
+    } catch (err) {
+      alert('সার্ভার ত্রুটি। আবার চেষ্টা করুন।');
+    }
+    setUploading(false);
   };
 
   return (
     <>
       {/* ব্লগ আপলোড ফর্ম */}
       {user && (profile?.role === 'expert' || profile?.role === 'admin') && (
-        <div className="form-card">
-          <h3>ব্লগ লিখুন</h3>
-          <input className="form-control" placeholder="শিরোনাম" value={title} onChange={e => setTitle(e.target.value)} />
+        <div className="form-card" style={{ maxWidth: '600px', margin: '0 auto 2rem' }}>
+          <h3 style={{ textAlign: 'center' }}>ব্লগ লিখুন</h3>
+          <input 
+            className="form-control" 
+            placeholder="শিরোনাম" 
+            value={title} 
+            onChange={e => setTitle(e.target.value)} 
+            maxLength={200}
+          />
           <select className="form-control mt-3" value={blogCat} onChange={e => setBlogCat(e.target.value)}>
             <option value="ফসল">ফসল</option>
             <option value="মৎস্য">মৎস্য</option>
             <option value="পশুপালন">পশুপালন</option>
             <option value="জৈব সার">জৈব সার</option>
           </select>
-          <textarea className="form-control mt-3" rows="5" placeholder="আপনার লেখা" value={content} onChange={e => setContent(e.target.value)}></textarea>
-          <button className="btn btn-primary w-100 mt-3" onClick={uploadBlog}>প্রকাশ করুন</button>
+          <textarea 
+            className="form-control mt-3" 
+            rows="5" 
+            placeholder="আপনার লেখা" 
+            value={content} 
+            onChange={e => setContent(e.target.value)}
+            style={{ whiteSpace: 'pre-wrap' }}
+          ></textarea>
+          <button 
+            className="btn btn-primary w-100 mt-3" 
+            onClick={uploadBlog}
+            disabled={uploading}
+          >
+            {uploading ? 'প্রকাশ হচ্ছে...' : 'প্রকাশ করুন'}
+          </button>
         </div>
       )}
 
       {/* ফিল্টার ট্যাব */}
-      <div className="filter-tabs">
+      <div className="filter-tabs" style={{ flexWrap: 'nowrap', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '0.5rem' }}>
         {categories.map(c => (
-          <button key={c} className={`filter-tab ${cat === c ? 'active' : ''}`} onClick={() => setCat(c)}>
+          <button 
+            key={c} 
+            className={`filter-tab ${cat === c ? 'active' : ''}`} 
+            onClick={() => setCat(c)}
+            style={{ flexShrink: 0 }}
+          >
             {c === 'all' ? 'সব' : c}
           </button>
         ))}
@@ -80,7 +118,15 @@ export default function BlogFilterClient({ blogs }) {
           {filtered.map(blog => <BlogCard key={blog.id} blog={blog} />)}
         </div>
       ) : (
-        <p>কোনো ব্লগ নেই</p>
+        <div className="feature-card" style={{ textAlign: 'center', gridColumn: '1/-1' }}>
+          <p style={{ fontSize: '1.2rem', color: '#666' }}>কোনো ব্লগ নেই</p>
+          {!user && (
+            <p style={{ fontSize: '0.9rem' }}>
+              <a href="/auth?mode=login" style={{ color: 'var(--primary)' }}>লগইন করুন</a>
+              {' '}এবং প্রথম ব্লগ লিখুন
+            </p>
+          )}
+        </div>
       )}
     </>
   );

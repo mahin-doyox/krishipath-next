@@ -4,17 +4,22 @@ export async function generateMetadata({ params }) {
   const supabase = await createClient();
   const { data: blog } = await supabase
     .from('blogs')
-    .select('*')
+    .select('id,title,content,category,user_name,approved')
     .eq('id', params.id)
     .maybeSingle();
 
   if (!blog || !blog.approved) {
-    return { title: 'ব্লগ পাওয়া যায়নি' };
+    return { title: 'ব্লগ পাওয়া যায়নি - কৃষিপথ' };
   }
 
   return {
     title: `${blog.title} - কৃষিপথ ব্লগ`,
     description: blog.content?.slice(0, 160),
+    openGraph: {
+      title: blog.title,
+      description: blog.content?.slice(0, 160),
+      type: 'article',
+    },
   };
 }
 
@@ -22,30 +27,45 @@ export default async function BlogDetailPage({ params }) {
   const supabase = await createClient();
   const { data: blog } = await supabase
     .from('blogs')
-    .select('*')
+    .select('id,title,content,category,user_name,approved,created_at')
     .eq('id', params.id)
     .maybeSingle();
 
-  // ‼️ গুরুত্বপূর্ণ: notFound() কল না করে, একটি সুন্দর UI রিটার্ন করো
   if (!blog || !blog.approved) {
     return (
-      <div className="container" style={{ padding: '3rem 0', textAlign: 'center' }}>
-        <h2 style={{ color: 'var(--primary)' }}>❌ ব্লগ পাওয়া যায়নি</h2>
-        <p>আপনি যে ব্লগটি খুঁজছেন, সেটি এখন আর উপলব্ধ নেই।</p>
-        <a href="/blog" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-          সব ব্লগ দেখুন
-        </a>
+      <div className="container" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
+        <div className="feature-card" style={{ maxWidth: '500px', margin: '0 auto' }}>
+          <h2 style={{ color: 'var(--primary)' }}>ব্লগ পাওয়া যায়নি</h2>
+          <p style={{ margin: '1rem 0', color: '#666' }}>
+            আপনি যে ব্লগটি খুঁজছেন, সেটি এখন আর উপলব্ধ নেই।
+          </p>
+          <a href="/blog" className="btn btn-primary">
+            সব ব্লগ দেখুন
+          </a>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container" style={{ padding: '2rem 0' }}>
-      <h2 className="section-title">{blog.title}</h2>
-      <div className="feature-card" style={{ textAlign: 'left' }}>
-        <small>{blog.category} — {blog.user_name}</small>
-        <hr />
-        <div style={{ whiteSpace: 'pre-wrap' }}>{blog.content}</div>
+    <div className="container" style={{ padding: '1.5rem 1rem 2rem', maxWidth: '800px', margin: '0 auto' }}>
+      <h2 className="section-title" style={{ textAlign: 'left', fontSize: 'clamp(1.5rem,4vw,2rem)' }}>
+        {blog.title}
+      </h2>
+      <div className="feature-card" style={{ textAlign: 'left', padding: '1.5rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#666' }}>
+          <span className="badge">{blog.category}</span>
+          <span>— {blog.user_name}</span>
+          {blog.created_at && (
+            <span>
+              • {new Date(blog.created_at).toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          )}
+        </div>
+        <hr style={{ margin: '0.5rem 0 1rem', borderColor: '#e0e0e0' }} />
+        <div style={{ whiteSpace: 'pre-wrap', fontSize: '1.05rem', lineHeight: '1.8' }}>
+          {blog.content}
+        </div>
       </div>
     </div>
   );

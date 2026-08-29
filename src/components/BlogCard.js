@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useAuth } from './AuthProvider';
 import { getRelativeTime } from '@/lib/relativeTime';
 
@@ -77,7 +76,7 @@ export default function BlogCard({ blog }) {
 
   return (
     <div className="feature-card" style={{ textAlign: 'left' }}>
-      {/* 🔗 সাধারণ <a> ট্যাগ ব্যবহার করছি, Link নয় */}
+      {/* সাধারণ <a> ট্যাগ */}
       <a href={`/blog/${blog.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
         <h4 style={{ fontSize: '1.2rem', marginBottom: '0.3rem' }}>{blog.title}</h4>
       </a>

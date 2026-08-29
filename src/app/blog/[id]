@@ -38,7 +38,7 @@ export default function BlogDetailPage() {
           <div className="skeleton" style={{ width: '40%', height: '1rem', marginBottom: '2rem' }}></div>
           <div className="skeleton" style={{ width: '100%', height: '1rem', marginBottom: '0.8rem' }}></div>
           <div className="skeleton" style={{ width: '100%', height: '1rem', marginBottom: '0.8rem' }}></div>
-          <div className="skeleton" style={{ width: '80%', height: '1rem', marginBottom: '0.8rem' }}></div>
+          <div className="skeleton" style={{ width: '80%', height: '1rem' }}></div>
         </div>
       </div>
     );
@@ -52,9 +52,9 @@ export default function BlogDetailPage() {
           <p style={{ margin: '1rem 0', color: '#666' }}>
             আপনি যে ব্লগটি খুঁজছেন, সেটি এখন আর উপলব্ধ নেই।
           </p>
-          <Link href="/blog" className="btn btn-primary">
+          <a href="/blog" className="btn btn-primary">
             সব ব্লগ দেখুন
-          </Link>
+          </a>
         </div>
       </div>
     );

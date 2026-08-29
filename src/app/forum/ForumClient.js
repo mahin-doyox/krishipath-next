@@ -15,79 +15,93 @@ export default function ForumClient({ questions }) {
   const [userLikes, setUserLikes] = useState({});
   const [modalQId, setModalQId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => {
     setData(questions);
   }, [questions]);
 
   useEffect(() => {
-    questions.forEach(async (q) => {
-      const { data: ans } = await supabase
-        .from('forum_answers')
-        .select('*')
-        .eq('question_id', q.id)
-        .eq('approved', true)
-        .order('created_at', { ascending: true });
-      setAnswersMap((prev) => ({ ...prev, [q.id]: ans || [] }));
+    const fetchAnswersAndLikes = async () => {
+      for (const q of questions) {
+        const { data: ans } = await supabase
+          .from('forum_answers')
+          .select('id,question_id,user_id,user_name,answer,approved,created_at')
+          .eq('question_id', q.id)
+          .eq('approved', true)
+          .order('created_at', { ascending: true });
+        setAnswersMap((prev) => ({ ...prev, [q.id]: ans || [] }));
 
-      ans?.forEach((a) => {
-        // লাইক কাউন্ট
-        supabase
-          .from('likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('item_type', 'answer')
-          .eq('item_id', a.id)
-          .then(({ count }) => setLikeCounts((prev) => ({ ...prev, [a.id]: count || 0 })));
-
-        // ইউজার লাইক স্ট্যাটাস – .single() এর বদলে .limit(1).maybeSingle()
-        if (user) {
-          supabase
-            .from('likes')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('item_type', 'answer')
-            .eq('item_id', a.id)
-            .limit(1)
-            .maybeSingle()
-            .then(({ data: likeData }) => setUserLikes((prev) => ({ ...prev, [a.id]: !!likeData })));
-        }
-      });
-    });
-  }, [questions, user, supabase]);
-
-  // রিয়েল-টাইম লাইক সাবস্ক্রিপশন
-  useEffect(() => {
-    const channel = supabase
-      .channel('answer-likes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'likes', filter: 'item_type=eq.answer' },
-        (payload) => {
-          const itemId = payload.new?.item_id || payload.old?.item_id;
+        ans?.forEach((a) => {
           supabase
             .from('likes')
             .select('*', { count: 'exact', head: true })
             .eq('item_type', 'answer')
-            .eq('item_id', itemId)
-            .then(({ count }) => setLikeCounts((prev) => ({ ...prev, [itemId]: count || 0 })));
-        }
-      )
-      .subscribe();
+            .eq('item_id', a.id)
+            .then(({ count }) => setLikeCounts((prev) => ({ ...prev, [a.id]: count || 0 })));
 
-    return () => supabase.removeChannel(channel);
+          if (user) {
+            supabase
+              .from('likes')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('item_type', 'answer')
+              .eq('item_id', a.id)
+              .limit(1)
+              .maybeSingle()
+              .then(({ data: likeData }) => setUserLikes((prev) => ({ ...prev, [a.id]: !!likeData })));
+          }
+        });
+      }
+    };
+    fetchAnswersAndLikes();
+  }, [questions, user, supabase]);
+
+  // রিয়েল-টাইম লাইক আপডেট (ইরর হ্যান্ডলিং সহ)
+  useEffect(() => {
+    let channel;
+    try {
+      channel = supabase
+        .channel('forum-answer-likes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'likes', filter: 'item_type=eq.answer' },
+          (payload) => {
+            const itemId = payload.new?.item_id || payload.old?.item_id;
+            if (itemId) {
+              supabase
+                .from('likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('item_type', 'answer')
+                .eq('item_id', itemId)
+                .then(({ count }) => setLikeCounts((prev) => ({ ...prev, [itemId]: count || 0 })));
+            }
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('Realtime subscription failed:', err.message);
+    }
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, [supabase]);
 
   const askQuestion = async () => {
     if (!user || !profile) return alert('প্রশ্ন করতে লগইন করুন।');
-    if (!title.trim() || !body.trim()) return alert('বিষয় ও বিবরণ দিন');
-    await supabase.from('forum_questions').insert([
-      { title, body, user_id: user.id, user_name: profile.name, approved: true },
+    if (!title.trim() || !body.trim()) return alert('বিষয় ও বিবরণ দিন');
+    setAsking(true);
+    const { error } = await supabase.from('forum_questions').insert([
+      { title: title.trim(), body: body.trim(), user_id: user.id, user_name: profile.name, approved: true },
     ]);
-    alert('প্রশ্ন জমা হয়েছে');
+    setAsking(false);
+    if (error) {
+      alert('প্রশ্ন জমা দিতে সমস্যা হয়েছে।');
+      return;
+    }
+    alert('প্রশ্ন জমা হয়েছে');
     setTitle(''); setBody('');
     const { data: updated } = await supabase
       .from('forum_questions')
-      .select('*')
+      .select('id,title,body,user_id,user_name,approved,created_at')
       .eq('approved', true)
       .order('created_at', { ascending: false });
     setData(updated || []);
@@ -103,7 +117,7 @@ export default function ForumClient({ questions }) {
   const refreshAnswers = async (qid) => {
     const { data: ans } = await supabase
       .from('forum_answers')
-      .select('*')
+      .select('id,question_id,user_id,user_name,answer,approved,created_at')
       .eq('question_id', qid)
       .eq('approved', true)
       .order('created_at', { ascending: true });
@@ -139,30 +153,31 @@ export default function ForumClient({ questions }) {
   return (
     <>
       {/* সার্চ ইনপুট */}
-      <div className="form-card" style={{ marginBottom: '1.5rem' }}>
+      <div className="form-card" style={{ marginBottom: '1.5rem', maxWidth: '600px', margin: '0 auto 1.5rem' }}>
         <input
           type="text"
           className="form-control"
-          placeholder="🔍 প্রশ্ন খুঁজুন (বিষয় বা বিবরণ)"
+          placeholder="🔍 প্রশ্ন খুঁজুন (বিষয় বা বিবরণ)"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         {searchTerm && (
           <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#555' }}>
-            {filteredQuestions.length} টি প্রশ্ন পাওয়া গেছে
+            {filteredQuestions.length} টি প্রশ্ন পাওয়া গেছে
           </p>
         )}
       </div>
 
       {/* প্রশ্ন ফর্ম বা লগইন প্রম্পট */}
       {user ? (
-        <div className="form-card">
+        <div className="form-card" style={{ maxWidth: '600px', margin: '0 auto 1.5rem' }}>
           <h3>প্রশ্ন জিজ্ঞাসা</h3>
           <input
             className="form-control"
-            placeholder="বিষয়"
+            placeholder="বিষয়"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            maxLength={200}
           />
           <textarea
             className="form-control mt-3"
@@ -172,12 +187,12 @@ export default function ForumClient({ questions }) {
             onChange={(e) => setBody(e.target.value)}
             style={{ whiteSpace: 'pre-wrap' }}
           ></textarea>
-          <button className="btn btn-primary w-100 mt-3" onClick={askQuestion}>
-            জিজ্ঞাসা করুন
+          <button className="btn btn-primary w-100 mt-3" onClick={askQuestion} disabled={asking}>
+            {asking ? 'জমা হচ্ছে...' : 'জিজ্ঞাসা করুন'}
           </button>
         </div>
       ) : (
-        <div className="form-card" style={{ textAlign: 'center' }}>
+        <div className="form-card" style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto 1.5rem' }}>
           <p>
             প্রশ্ন করতে{' '}
             <Link href="/auth?mode=login" style={{ color: 'var(--primary)', fontWeight: 600 }}>
@@ -191,10 +206,10 @@ export default function ForumClient({ questions }) {
       {/* প্রশ্ন তালিকা */}
       {filteredQuestions.length > 0 ? (
         filteredQuestions.map((q) => (
-          <div key={q.id} className="feature-card" style={{ textAlign: 'left' }}>
-            <h4>{q.title}</h4>
-            <p style={{ whiteSpace: 'pre-wrap' }}>{q.body}</p>
-            <small>
+          <div key={q.id} className="feature-card" style={{ textAlign: 'left', maxWidth: '800px', margin: '0 auto 1rem' }}>
+            <h4 style={{ fontSize: '1.2rem' }}>{q.title}</h4>
+            <p style={{ whiteSpace: 'pre-wrap', margin: '0.5rem 0' }}>{q.body}</p>
+            <small style={{ color: '#666' }}>
               — {q.user_name} • {getRelativeTime(q.created_at)}
             </small>
             <div className="mt-3">
@@ -205,12 +220,13 @@ export default function ForumClient({ questions }) {
                   className="answer-box"
                   style={{
                     marginBottom: '0.8rem',
+                    marginTop: '0.5rem',
                     padding: '0.8rem',
                     borderRadius: '12px',
                   }}
                 >
                   <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{a.answer}</p>
-                  <small>
+                  <small style={{ color: '#666' }}>
                     — {a.user_name} • {getRelativeTime(a.created_at)}
                   </small>
                   <div style={{ marginTop: '0.3rem' }}>
@@ -233,7 +249,7 @@ export default function ForumClient({ questions }) {
       ) : (
         <div className="form-card" style={{ textAlign: 'center' }}>
           <p>
-            কোনো প্রশ্ন পাওয়া যায়নি।{' '}
+            কোনো প্রশ্ন পাওয়া যায়নি।{' '}
             {!searchTerm && (
               <>
                 <Link href="/auth?mode=login" style={{ color: 'var(--primary)', fontWeight: 600 }}>

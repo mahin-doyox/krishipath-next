@@ -13,6 +13,7 @@ export default function CropChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   // হিস্টরি লোড
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function CropChatPage() {
       );
     }
     setLoading(false);
+    inputRef.current?.focus();
   };
 
   const handleKeyDown = (e) => {
@@ -65,16 +67,16 @@ export default function CropChatPage() {
     <div style={{
       maxWidth: '700px',
       margin: '0 auto',
-      padding: '1rem 1rem 0',
+      padding: '1rem',
       display: 'flex',
       flexDirection: 'column',
-      minHeight: '100vh',
+      minHeight: 'calc(100vh - 160px)',
     }}>
-      <h2 className="section-title" style={{ fontSize: '1.6rem', marginBottom: '1rem', flexShrink: 0 }}>
+      <h2 className="section-title" style={{ fontSize: 'clamp(1.4rem,4vw,1.8rem)', marginBottom: '1rem', flexShrink: 0 }}>
         💬 কৃষি পরামর্শ চ্যাট
       </h2>
 
-      {!user && (
+      {!user ? (
         <div style={{ flexShrink: 0 }}>
           <div className="form-card" style={{ textAlign: 'center', marginBottom: '1rem' }}>
             <p>⚠️ এই ফিচারটি ব্যবহার করতে লগইন করুন।</p>
@@ -83,117 +85,125 @@ export default function CropChatPage() {
             </Link>
           </div>
         </div>
-      )}
-
-      {/* চ্যাট মেসেজ এরিয়া — পুরো পেজ স্ক্রল করবে */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          paddingBottom: '1rem',
-        }}
-      >
-        {chats.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#888', marginTop: '4rem', padding: '0 1rem' }}>
-            👋 স্বাগতম! আপনার ফসলের রোগের নাম লিখুন, ওষুধ ও পরামর্শ জানুন।
-          </p>
-        )}
-        {chats.map((chat) => (
-          <div key={chat.id}>
-            {/* ইউজার মেসেজ */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.4rem' }}>
-              <div
-                style={{
-                  background: 'var(--primary)',
-                  color: 'white',
-                  padding: '0.7rem 1rem',
-                  borderRadius: '18px 18px 4px 18px',
-                  maxWidth: '80%',
-                  fontSize: '0.95rem',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {chat.message}
-              </div>
-            </div>
-            {/* বট রিপ্লাই */}
-            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <div
-                style={{
-                  background: '#e8f5e9',
-                  color: 'var(--primary)',
-                  padding: '0.7rem 1rem',
-                  borderRadius: '18px 18px 18px 4px',
-                  maxWidth: '80%',
-                  fontSize: '0.95rem',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {chat.reply}
-              </div>
-            </div>
-          </div>
-        ))}
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* ইনপুট এরিয়া — sticky, নিচে স্থির */}
-      {user && (
-        <div
-          style={{
-            position: 'sticky',
-            bottom: 0,
-            background: '#f2f9f2',
-            paddingTop: '0.8rem',
-            paddingBottom: '0.8rem',
-            borderTop: '1px solid rgba(0,0,0,0.05)',
-            display: 'flex',
-            gap: '0.5rem',
-            alignItems: 'center',
-          }}
-        >
-          <input
-            type="text"
-            placeholder="রোগের নাম লিখুন..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
+      ) : (
+        <>
+          {/* চ্যাট মেসেজ এরিয়া */}
+          <div
             style={{
               flex: 1,
-              minWidth: 0,
-              padding: '12px 16px',
-              borderRadius: '24px',
-              border: '2px solid #d1e7dd',
-              fontSize: '16px',
-              outline: 'none',
-              background: 'white',
-              color: 'var(--primary)',
-            }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!message.trim() || loading}
-            style={{
-              padding: '10px 16px',
-              borderRadius: '24px',
-              background: 'var(--primary)',
-              color: 'white',
-              border: 'none',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+              paddingBottom: '1rem',
+              minHeight: 0,
             }}
           >
-            {loading ? '•••' : 'পাঠান'}
-          </button>
-        </div>
-      )}
-      {error && (
-        <p style={{ color: 'red', textAlign: 'center', flexShrink: 0, marginTop: '0.5rem' }}>{error}</p>
+            {chats.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#888', marginTop: '4rem', padding: '0 1rem' }}>
+                <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👋</p>
+                <p>স্বাগতম! আপনার ফসলের রোগের নাম লিখুন, ওষুধ ও পরামর্শ জানুন।</p>
+              </div>
+            )}
+            {chats.map((chat) => (
+              <div key={chat.id}>
+                {/* ইউজার মেসেজ */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.4rem' }}>
+                  <div
+                    style={{
+                      background: 'var(--primary)',
+                      color: 'white',
+                      padding: '0.7rem 1rem',
+                      borderRadius: '18px 18px 4px 18px',
+                      maxWidth: '80%',
+                      fontSize: '0.95rem',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {chat.message}
+                  </div>
+                </div>
+                {/* বট রিপ্লাই */}
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <div
+                    style={{
+                      background: '#e8f5e9',
+                      color: 'var(--primary)',
+                      padding: '0.7rem 1rem',
+                      borderRadius: '18px 18px 18px 4px',
+                      maxWidth: '80%',
+                      fontSize: '0.95rem',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {chat.reply === '...' ? (
+                      <span style={{ color: '#888' }}>লিখছে...</span>
+                    ) : (
+                      chat.reply
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* ইনপুট এরিয়া */}
+          <div
+            style={{
+              flexShrink: 0,
+              background: '#f2f9f2',
+              paddingTop: '0.8rem',
+              paddingBottom: '0.8rem',
+              borderTop: '1px solid rgba(0,0,0,0.05)',
+              display: 'flex',
+              gap: '0.5rem',
+              alignItems: 'center',
+            }}
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="রোগের নাম লিখুন..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: '12px 16px',
+                borderRadius: '24px',
+                border: '2px solid #d1e7dd',
+                fontSize: '16px',
+                outline: 'none',
+                background: 'white',
+                color: 'var(--primary)',
+              }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!message.trim() || loading}
+              style={{
+                padding: '10px 16px',
+                borderRadius: '24px',
+                background: loading ? '#999' : 'var(--primary)',
+                color: 'white',
+                border: 'none',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {loading ? '•••' : 'পাঠান'}
+            </button>
+          </div>
+          {error && (
+            <p style={{ color: 'red', textAlign: 'center', flexShrink: 0, marginTop: '0.5rem' }}>{error}</p>
+          )}
+        </>
       )}
     </div>
   );

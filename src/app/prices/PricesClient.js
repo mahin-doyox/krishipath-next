@@ -54,13 +54,10 @@ export default function PricesClient() {
   const [agentCropSuggestions, setAgentCropSuggestions] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  // Derived dropdown options
   const districts = div ? Object.keys(bangladeshData[div] || {}) : [];
   const upazilas = div && dist ? bangladeshData[div][dist] || [] : [];
 
-  // ============================================
-  //  LOAD WATCHLIST FROM LOCALSTORAGE
-  // ============================================
+  // Watchlist
   useEffect(() => {
     try {
       const saved = localStorage.getItem('krishipath_watchlist');
@@ -87,7 +84,6 @@ export default function PricesClient() {
     return watchlist.some(w => `${w.division}|${w.district}|${w.upaz}|${w.area}|${w.crop}` === key);
   };
 
-  // Helper to get current theme colors
   const getChartColors = () => {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     return {
@@ -98,9 +94,7 @@ export default function PricesClient() {
     };
   };
 
-  // ============================================
-  //  FETCH AREAS / CROPS
-  // ============================================
+  // Fetch areas/crops
   useEffect(() => {
     if (div && dist && upaz) {
       supabase.from('agent_prices').select('area', { distinct: true })
@@ -122,9 +116,7 @@ export default function PricesClient() {
       .then(({ data }) => { if (data) setCompareCrops([...new Set(data.map(c => c.crop).filter(Boolean))]); });
   }, [supabase]);
 
-  // ============================================
-  //  TREND CHART (Timeframe + Moving Average) + Stats
-  // ============================================
+  // Trend Chart + Stats
   const buildTrendChart = async () => {
     if (!crop || !area) return;
     let days = 30;
@@ -156,7 +148,17 @@ export default function PricesClient() {
       const diff = prices[prices.length - 1] - prices[prices.length - 2];
       trend = diff > 0 ? '📈 বাড়ছে' : diff < 0 ? '📉 কমছে' : '⏺️ স্থিতিশীল';
     }
-    setStats({ current: `${current} টাকা/কেজি`, max: `${max} টাকা`, min: `${min} টাকা`, avg: `${avg} টাকা`, trend });
+    setStats({ 
+      current: `${current} টাকা/কেজি`, 
+      max: `${max} টাকা`, 
+      min: `${min} টাকা`, 
+      avg: `${avg} টাকা`, 
+      trend,
+      cropName: crop,
+      areaName: area,
+      upazilaName: upaz,
+      distName: dist,
+    });
 
     const ma = [];
     for (let i = 0; i < prices.length; i++) {
@@ -185,7 +187,7 @@ export default function PricesClient() {
               borderWidth: 2,
             },
             {
-              label: '7-দিনের গড়',
+              label: '7-দিনের গড়',
               data: ma,
               borderColor: colors.secondaryColor,
               borderDash: [5, 5],
@@ -197,12 +199,13 @@ export default function PricesClient() {
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { labels: { color: colors.textColor, font: { size: 12 } } },
           },
           scales: {
             x: {
-              ticks: { color: colors.textColor },
+              ticks: { color: colors.textColor, maxRotation: 45, minRotation: 45 },
               grid: { color: colors.gridColor },
             },
             y: {
@@ -219,9 +222,7 @@ export default function PricesClient() {
     if (showDashboard && crop) buildTrendChart();
   }, [crop, showDashboard, timeframe]);
 
-  // ============================================
-  //  CROP COMPARISON CHART
-  // ============================================
+  // Comparison Chart
   const buildComparisonChart = async () => {
     if (!compareCrop || !area) return;
     const primaryCrop = crop || compareCrop;
@@ -276,9 +277,10 @@ export default function PricesClient() {
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: { legend: { labels: { color: colors.textColor, font: { size: 12 } } } },
           scales: {
-            x: { ticks: { color: colors.textColor }, grid: { color: colors.gridColor } },
+            x: { ticks: { color: colors.textColor, maxRotation: 45, minRotation: 45 }, grid: { color: colors.gridColor } },
             y: { ticks: { color: colors.textColor }, grid: { color: colors.gridColor } },
           },
         },
@@ -290,9 +292,7 @@ export default function PricesClient() {
     if (compareCrop) buildComparisonChart();
   }, [compareCrop, area]);
 
-  // ============================================
-  //  REGIONAL COMPARISON CHART
-  // ============================================
+  // Regional Chart
   const buildRegionalChart = async () => {
     if (!regionalCrop) return;
     const { data } = await supabase
@@ -327,10 +327,11 @@ export default function PricesClient() {
         type: 'bar',
         data: {
           labels,
-          datasets: [{ label: `${regionalCrop} - গড় দাম (টাকা)`, data: values, backgroundColor: colors.primaryColor }],
+          datasets: [{ label: `${regionalCrop} - গড় দাম (টাকা)`, data: values, backgroundColor: colors.primaryColor }],
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
             x: { ticks: { color: colors.textColor }, grid: { color: colors.gridColor } },
@@ -345,9 +346,7 @@ export default function PricesClient() {
     if (regionalCrop) buildRegionalChart();
   }, [regionalCrop]);
 
-  // ============================================
-  //  AGENT UPLOAD LOGIC
-  // ============================================
+  // Agent Upload
   useEffect(() => {
     supabase.from('agent_prices').select('crop', { distinct: true }).eq('approved', true)
       .then(({ data }) => { if (data) setAgentCropSuggestions([...new Set(data.map(c => c.crop).filter(Boolean))]); });
@@ -365,21 +364,22 @@ export default function PricesClient() {
     if (!user || !profile || (profile.role !== 'agent' && profile.role !== 'admin')) return alert('শুধুমাত্র এজেন্ট ও অ্যাডমিন বাজার দর যোগ করতে পারেন।');
     if (!agentDiv || !agentDist || !agentUpaz || !agentArea || !agentCrop || !agentPrice) return alert('সব তথ্য পূরণ করুন');
     setUploading(true);
-    await supabase.from('agent_prices').insert([{
+    const { error } = await supabase.from('agent_prices').insert([{
       division: agentDiv, district: agentDist, upazila: agentUpaz, area: agentArea, crop: agentCrop,
       price: parseFloat(agentPrice), user_id: user.id, user_name: profile.name, approved: false
     }]);
-    alert('জমা হয়েছে, অনুমোদনের অপেক্ষায়।');
-    setAgentDiv(''); setAgentDist(''); setAgentUpaz(''); setAgentArea(''); setAgentCrop(''); setAgentPrice('');
     setUploading(false);
+    if (error) {
+      alert('জমা দিতে সমস্যা হয়েছে।');
+      return;
+    }
+    alert('জমা হয়েছে, অনুমোদনের অপেক্ষায়।');
+    setAgentDiv(''); setAgentDist(''); setAgentUpaz(''); setAgentArea(''); setAgentCrop(''); setAgentPrice('');
   };
 
-  // ============================================
-  //  RENDER
-  // ============================================
   return (
     <>
-      {/* ---------- WATCHLIST ---------- */}
+      {/* Watchlist */}
       {watchlist.length > 0 && (
         <div className="form-card" style={{ marginBottom: '1rem' }}>
           <h3>⭐ আপনার পছন্দের আইটেম</h3>
@@ -392,9 +392,9 @@ export default function PricesClient() {
         </div>
       )}
 
-      {/* ---------- AGENT UPLOAD FORM ---------- */}
+      {/* Agent Upload Form */}
       {user && (profile?.role === 'agent' || profile?.role === 'admin') && (
-        <div className="form-card">
+        <div className="form-card" style={{ maxWidth: '600px', margin: '0 auto 1.5rem' }}>
           <h3>বাজার দর যোগ করুন</h3>
           <select value={agentDiv} onChange={e => { setAgentDiv(e.target.value); setAgentDist(''); setAgentUpaz(''); }} className="form-control">
             <option value="">বিভাগ</option>
@@ -419,35 +419,35 @@ export default function PricesClient() {
         </div>
       )}
 
-      {/* ---------- FILTER ROW ---------- */}
-      <div className="flex-row">
-        <select value={div} onChange={e => { setDiv(e.target.value); setDist(''); setUpaz(''); setArea(''); setCrop(''); setShowDashboard(false); }} className="form-control" style={{ maxWidth: '180px' }}>
+      {/* Filter Row */}
+      <div className="flex-row" style={{ justifyContent: 'center' }}>
+        <select value={div} onChange={e => { setDiv(e.target.value); setDist(''); setUpaz(''); setArea(''); setCrop(''); setShowDashboard(false); }} className="form-control" style={{ maxWidth: '180px', minWidth: '140px' }}>
           <option value="">বিভাগ</option>
           {divisions.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
-        <select value={dist} onChange={e => { setDist(e.target.value); setUpaz(''); setArea(''); setCrop(''); setShowDashboard(false); }} className="form-control" style={{ maxWidth: '180px' }}>
+        <select value={dist} onChange={e => { setDist(e.target.value); setUpaz(''); setArea(''); setCrop(''); setShowDashboard(false); }} className="form-control" style={{ maxWidth: '180px', minWidth: '140px' }}>
           <option value="">জেলা</option>
           {districts.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
-        <select value={upaz} onChange={e => { setUpaz(e.target.value); setArea(''); setCrop(''); setShowDashboard(false); }} className="form-control" style={{ maxWidth: '180px' }}>
+        <select value={upaz} onChange={e => { setUpaz(e.target.value); setArea(''); setCrop(''); setShowDashboard(false); }} className="form-control" style={{ maxWidth: '180px', minWidth: '140px' }}>
           <option value="">উপজেলা</option>
           {upazilas.map(u => <option key={u} value={u}>{u}</option>)}
         </select>
-        <select value={area} onChange={e => { setArea(e.target.value); setCrop(''); setShowDashboard(false); }} className="form-control" style={{ maxWidth: '180px' }}>
+        <select value={area} onChange={e => { setArea(e.target.value); setCrop(''); setShowDashboard(false); }} className="form-control" style={{ maxWidth: '180px', minWidth: '140px' }}>
           <option value="">এলাকা</option>
           {areas.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
         {area && (
-          <select value={crop} onChange={e => { setCrop(e.target.value); setShowDashboard(true); }} className="form-control" style={{ maxWidth: '180px' }}>
+          <select value={crop} onChange={e => { setCrop(e.target.value); setShowDashboard(true); }} className="form-control" style={{ maxWidth: '180px', minWidth: '140px' }}>
             <option value="">ফসল</option>
             {crops.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
       </div>
 
-      {/* ---------- TIMEFRAME SELECTOR ---------- */}
+      {/* Timeframe */}
       {showDashboard && (
-        <div className="filter-tabs">
+        <div className="filter-tabs" style={{ justifyContent: 'center' }}>
           {['daily', 'weekly', 'monthly'].map(tf => (
             <button key={tf} className={`filter-tab ${timeframe === tf ? 'active' : ''}`} onClick={() => setTimeframe(tf)}>
               {tf === 'daily' ? 'দৈনিক' : tf === 'weekly' ? 'সাপ্তাহিক' : 'মাসিক'}
@@ -456,17 +456,24 @@ export default function PricesClient() {
         </div>
       )}
 
-      {/* ---------- DASHBOARD CARDS ---------- */}
+      {/* Dashboard */}
       {showDashboard && (
         <>
           <div className="dashboard-grid">
             <div className="stat-card"><h3>বর্তমান মূল্য</h3><div className="value">{stats.current}</div><div className="trend">{stats.trend}</div></div>
             <div className="stat-card"><h3>সর্বোচ্চ (সাম্প্রতিক)</h3><div className="value">{stats.max}</div></div>
             <div className="stat-card"><h3>সর্বনিম্ন (সাম্প্রতিক)</h3><div className="value">{stats.min}</div></div>
-            <div className="stat-card"><h3>গড় মূল্য</h3><div className="value">{stats.avg}</div></div>
+            <div className="stat-card"><h3>গড় মূল্য</h3><div className="value">{stats.avg}</div></div>
           </div>
 
-          <div className="chart-container" style={{ marginBottom: '1.5rem' }}>
+          {/* ফসল ও এলাকার তথ্য */}
+          {stats.cropName && (
+            <p style={{ margin: '0.5rem 0', fontSize: '0.9rem', color: '#666', textAlign: 'center' }}>
+              {stats.cropName} • {stats.areaName}, {stats.upazilaName}, {stats.distName}
+            </p>
+          )}
+
+          <div className="chart-container" style={{ marginBottom: '1.5rem', height: '300px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h3>📈 মূল্য প্রবণতা</h3>
               {crop && (
@@ -478,8 +485,7 @@ export default function PricesClient() {
             <canvas ref={trendChartRef}></canvas>
           </div>
 
-          {/* ---------- CROP COMPARISON ---------- */}
-          <div className="chart-container" style={{ marginBottom: '1.5rem' }}>
+          <div className="chart-container" style={{ marginBottom: '1.5rem', height: '300px' }}>
             <h3>🔄 ফসলের তুলনা</h3>
             <div className="flex-row" style={{ marginTop: '0.5rem' }}>
               <select value={compareCrop} onChange={e => setCompareCrop(e.target.value)} className="form-control" style={{ maxWidth: '200px' }}>
@@ -490,8 +496,7 @@ export default function PricesClient() {
             {compareCrop && <canvas ref={comparisonChartRef} style={{ marginTop: '1rem' }}></canvas>}
           </div>
 
-          {/* ---------- REGIONAL COMPARISON ---------- */}
-          <div className="chart-container" style={{ marginBottom: '1.5rem' }}>
+          <div className="chart-container" style={{ marginBottom: '1.5rem', height: '300px' }}>
             <h3>🗺️ আঞ্চলিক তুলনা</h3>
             <div className="flex-row" style={{ marginTop: '0.5rem' }}>
               <select value={regionalCrop} onChange={e => setRegionalCrop(e.target.value)} className="form-control" style={{ maxWidth: '200px' }}>
@@ -501,7 +506,7 @@ export default function PricesClient() {
             </div>
             {regionalCrop && regionalData && (
               <div style={{ marginTop: '1rem' }}>
-                <p style={{ marginBottom: '0.5rem', fontWeight: 600 }}>
+                <p style={{ marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
                   📌 সর্বোচ্চ: {regionalData.labels[regionalData.values.indexOf(Math.max(...regionalData.values))]} ({Math.max(...regionalData.values)} টাকা) | 
                   সর্বনিম্ন: {regionalData.labels[regionalData.values.indexOf(Math.min(...regionalData.values))]} ({Math.min(...regionalData.values)} টাকা)
                 </p>
@@ -510,7 +515,6 @@ export default function PricesClient() {
             )}
           </div>
 
-          {/* ---------- SUMMARY ---------- */}
           <div className="feature-card" style={{ textAlign: 'left', marginTop: '1rem' }}>
             <h4>📋 আজকের সারসংক্ষেপ</h4>
             <p><strong>{crop}</strong> ({area}, {upaz}, {dist}): <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{stats.current}</span></p>

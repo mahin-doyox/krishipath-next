@@ -11,58 +11,78 @@ export default function BlogCard({ blog }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let channel;
     const fetchLikes = async () => {
-      const { count } = await supabase
-        .from('likes')
-        .select('*', { count: 'exact', head: true })
-        .eq('item_type', 'blog')
-        .eq('item_id', blog.id);
-      setLikeCount(count || 0);
-
-      if (user) {
-        const { data } = await supabase
+      try {
+        const { count } = await supabase
           .from('likes')
-          .select('id')
-          .eq('user_id', user.id)
+          .select('*', { count: 'exact', head: true })
           .eq('item_type', 'blog')
-          .eq('item_id', blog.id)
-          .limit(1)
-          .maybeSingle();
-        setLiked(!!data);
+          .eq('item_id', blog.id);
+        setLikeCount(count || 0);
+
+        if (user) {
+          const { data } = await supabase
+            .from('likes')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('item_type', 'blog')
+            .eq('item_id', blog.id)
+            .limit(1)
+            .maybeSingle();
+          setLiked(!!data);
+        }
+      } catch (err) {
+        console.warn('Blog like fetch error:', err.message);
       }
     };
+
     fetchLikes();
 
-    const channel = supabase
-      .channel(`blog-likes-${blog.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'likes', filter: `item_type=eq.blog&item_id=eq.${blog.id}` },
-        () => fetchLikes()
-      )
-      .subscribe();
+    try {
+      channel = supabase
+        .channel(`blog-likes-${blog.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'likes', filter: `item_type=eq.blog&item_id=eq.${blog.id}` },
+          () => fetchLikes()
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('Blog like subscription failed:', err.message);
+    }
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [blog.id, user, supabase]);
 
   const toggleLike = async () => {
-    if (!user) return alert('লাইক দিতে লগইন করুন।');
+    if (!user) {
+      alert('লাইক দিতে লগইন করুন।');
+      return;
+    }
     if (loading) return;
     setLoading(true);
 
-    if (liked) {
-      await supabase
-        .from('likes')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('item_type', 'blog')
-        .eq('item_id', blog.id);
-    } else {
-      await supabase.from('likes').insert({
-        user_id: user.id,
-        item_type: 'blog',
-        item_id: blog.id,
-      });
+    try {
+      if (liked) {
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('item_type', 'blog')
+          .eq('item_id', blog.id);
+      } else {
+        await supabase.from('likes').insert({
+          user_id: user.id,
+          item_type: 'blog',
+          item_id: blog.id,
+        });
+      }
+    } catch (err) {
+      console.error('Toggle like error:', err.message);
+      alert('লাইক দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     }
     setLoading(false);
   };
@@ -70,12 +90,14 @@ export default function BlogCard({ blog }) {
   return (
     <div className="feature-card" style={{ textAlign: 'left' }}>
       <Link href={`/blog/${blog.id}`} prefetch={false} style={{ textDecoration: 'none', color: 'inherit' }}>
-        <h4>{blog.title}</h4>
+        <h4 style={{ fontSize: '1.2rem', marginBottom: '0.3rem' }}>{blog.title}</h4>
       </Link>
-      <small>
+      <small style={{ color: '#666', display: 'block', marginBottom: '0.5rem' }}>
         {blog.category} — {blog.user_name} • {getRelativeTime(blog.created_at)}
       </small>
-      <div style={{ whiteSpace: 'pre-wrap', marginTop: '1rem' }}>{blog.content}</div>
+      <div style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem', fontSize: '0.95rem', lineHeight: '1.6' }}>
+        {blog.content?.length > 300 ? blog.content.slice(0, 300) + '...' : blog.content}
+      </div>
       <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <button
           className={`btn btn-sm ${liked ? 'btn-primary' : 'btn-outline'}`}

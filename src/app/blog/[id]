@@ -1,30 +1,48 @@
-import { createClient } from '@/lib/supabase/server';
+'use client';
 
-export async function generateMetadata({ params }) {
-  const supabase = await createClient();
-  const { data: blog } = await supabase
-    .from('blogs')
-    .select('id,title,content,category,user_name,approved')
-    .eq('id', params.id)
-    .maybeSingle();
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { createClientBrowser } from '@/lib/supabase/client';
+import { getRelativeTime } from '@/lib/relativeTime';
 
-  if (!blog || !blog.approved) {
-    return { title: 'ব্লগ পাওয়া যায়নি - কৃষিপথ' };
+export default function BlogDetailPage() {
+  const params = useParams();
+  const [blog, setBlog] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClientBrowser();
+
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        const { data } = await supabase
+          .from('blogs')
+          .select('id,title,content,category,user_name,approved,created_at')
+          .eq('id', params.id)
+          .maybeSingle();
+        setBlog(data);
+      } catch (err) {
+        console.error('Blog fetch error:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBlog();
+  }, [params.id, supabase]);
+
+  if (loading) {
+    return (
+      <div className="container" style={{ padding: '2rem 1rem', maxWidth: '800px', margin: '0 auto' }}>
+        <div className="feature-card skeleton-card">
+          <div className="skeleton" style={{ width: '70%', height: '2rem', marginBottom: '1rem' }}></div>
+          <div className="skeleton" style={{ width: '40%', height: '1rem', marginBottom: '2rem' }}></div>
+          <div className="skeleton" style={{ width: '100%', height: '1rem', marginBottom: '0.8rem' }}></div>
+          <div className="skeleton" style={{ width: '100%', height: '1rem', marginBottom: '0.8rem' }}></div>
+          <div className="skeleton" style={{ width: '80%', height: '1rem', marginBottom: '0.8rem' }}></div>
+        </div>
+      </div>
+    );
   }
-
-  return {
-    title: `${blog.title} - কৃষিপথ ব্লগ`,
-    description: blog.content?.slice(0, 160),
-  };
-}
-
-export default async function BlogDetailPage({ params }) {
-  const supabase = await createClient();
-  const { data: blog } = await supabase
-    .from('blogs')
-    .select('id,title,content,category,user_name,approved,created_at')
-    .eq('id', params.id)
-    .maybeSingle();
 
   if (!blog || !blog.approved) {
     return (
@@ -34,9 +52,9 @@ export default async function BlogDetailPage({ params }) {
           <p style={{ margin: '1rem 0', color: '#666' }}>
             আপনি যে ব্লগটি খুঁজছেন, সেটি এখন আর উপলব্ধ নেই।
           </p>
-          <a href="/blog" className="btn btn-primary">
+          <Link href="/blog" className="btn btn-primary">
             সব ব্লগ দেখুন
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -51,11 +69,7 @@ export default async function BlogDetailPage({ params }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#666' }}>
           <span className="badge">{blog.category}</span>
           <span>— {blog.user_name}</span>
-          {blog.created_at && (
-            <span>
-              • {new Date(blog.created_at).toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
-          )}
+          <span>• {getRelativeTime(blog.created_at)}</span>
         </div>
         <hr style={{ margin: '0.5rem 0 1rem', borderColor: '#e0e0e0' }} />
         <div style={{ whiteSpace: 'pre-wrap', fontSize: '1.05rem', lineHeight: '1.8' }}>

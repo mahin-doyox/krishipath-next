@@ -16,14 +16,30 @@ export default function DarkModeToggle() {
     const next = !dark;
     setDark(next);
     document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
-    localStorage.setItem('krishipath_darkmode', next);
+    localStorage.setItem('krishipath_darkmode', String(next));
   };
 
   return (
     <button
-      className="btn btn-sm"
       onClick={toggle}
-      style={{ background: 'transparent', border: 'none', fontSize: '1.4rem', cursor: 'pointer' }}
+      aria-label={dark ? 'লাইট মোডে যান' : 'ডার্ক মোডে যান'}
+      title={dark ? 'লাইট মোড' : 'ডার্ক মোড'}
+      style={{
+        background: 'transparent',
+        border: 'none',
+        fontSize: '1.4rem',
+        cursor: 'pointer',
+        padding: '0.4rem',
+        borderRadius: '50%',
+        transition: 'transform 0.3s ease, background 0.3s ease',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '40px',
+        height: '40px',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
     >
       {dark ? '☀️' : '🌙'}
     </button>

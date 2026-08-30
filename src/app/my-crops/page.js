@@ -5,11 +5,71 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getRelativeTime } from '@/lib/relativeTime';
 
+// ✅ ফসলের টাইমলাইন কনফিগ — এটা ফাইলের উপরে থাকবে
 const cropSchedules = {
-  // উপরের কনফিগ বসাও
+  ধান: [
+    { day: 0, task: 'রোপণ সম্পন্ন', type: 'planting' },
+    { day: 3, task: 'হালকা সেচ দিন', type: 'irrigation' },
+    { day: 7, task: 'আগাছা পরিষ্কার করুন', type: 'weeding' },
+    { day: 15, task: 'ইউরিয়া সার প্রয়োগ করুন', type: 'fertilizer' },
+    { day: 25, task: 'কীটনাশক স্প্রে করুন', type: 'pesticide' },
+    { day: 35, task: 'দ্বিতীয় সেচ দিন', type: 'irrigation' },
+    { day: 45, task: 'আগাছা পরিষ্কার করুন', type: 'weeding' },
+    { day: 60, task: 'ফলন পর্যবেক্ষণ করুন', type: 'observation' },
+    { day: 90, task: 'ফসল কাটার প্রস্তুতি', type: 'harvesting' },
+  ],
+  গম: [
+    { day: 0, task: 'বপন সম্পন্ন', type: 'planting' },
+    { day: 15, task: 'হালকা সেচ দিন', type: 'irrigation' },
+    { day: 30, task: 'ইউরিয়া সার প্রয়োগ করুন', type: 'fertilizer' },
+    { day: 45, task: 'দ্বিতীয় সেচ দিন', type: 'irrigation' },
+    { day: 60, task: 'আগাছা পরিষ্কার করুন', type: 'weeding' },
+    { day: 80, task: 'ফলন পর্যবেক্ষণ করুন', type: 'observation' },
+    { day: 105, task: 'ফসল কাটা', type: 'harvesting' },
+  ],
+  আলু: [
+    { day: 0, task: 'রোপণ সম্পন্ন', type: 'planting' },
+    { day: 5, task: 'হালকা সেচ দিন', type: 'irrigation' },
+    { day: 15, task: 'জৈব সার প্রয়োগ করুন', type: 'fertilizer' },
+    { day: 25, task: 'কীটনাশক স্প্রে করুন', type: 'pesticide' },
+    { day: 35, task: 'দ্বিতীয় সেচ দিন', type: 'irrigation' },
+    { day: 45, task: 'আগাছা পরিষ্কার করুন', type: 'weeding' },
+    { day: 60, task: 'ফলন পর্যবেক্ষণ করুন', type: 'observation' },
+    { day: 75, task: 'ফসল তোলা', type: 'harvesting' },
+  ],
+  পেঁয়াজ: [
+    { day: 0, task: 'রোপণ সম্পন্ন', type: 'planting' },
+    { day: 3, task: 'হালকা সেচ দিন', type: 'irrigation' },
+    { day: 10, task: 'আগাছা পরিষ্কার করুন', type: 'weeding' },
+    { day: 20, task: 'ইউরিয়া সার প্রয়োগ করুন', type: 'fertilizer' },
+    { day: 30, task: 'কীটনাশক স্প্রে করুন', type: 'pesticide' },
+    { day: 45, task: 'দ্বিতীয় সেচ দিন', type: 'irrigation' },
+    { day: 60, task: 'ফলন পর্যবেক্ষণ করুন', type: 'observation' },
+    { day: 85, task: 'ফসল তোলা', type: 'harvesting' },
+  ],
+  টমেটো: [
+    { day: 0, task: 'রোপণ সম্পন্ন', type: 'planting' },
+    { day: 5, task: 'হালকা সেচ দিন', type: 'irrigation' },
+    { day: 12, task: 'আগাছা পরিষ্কার করুন', type: 'weeding' },
+    { day: 20, task: 'জৈব সার প্রয়োগ করুন', type: 'fertilizer' },
+    { day: 30, task: 'কীটনাশক স্প্রে করুন', type: 'pesticide' },
+    { day: 40, task: 'দ্বিতীয় সেচ দিন', type: 'irrigation' },
+    { day: 50, task: 'ফলন পর্যবেক্ষণ করুন', type: 'observation' },
+    { day: 70, task: 'ফসল তোলা', type: 'harvesting' },
+  ],
+  মরিচ: [
+    { day: 0, task: 'রোপণ সম্পন্ন', type: 'planting' },
+    { day: 5, task: 'হালকা সেচ দিন', type: 'irrigation' },
+    { day: 15, task: 'আগাছা পরিষ্কার করুন', type: 'weeding' },
+    { day: 25, task: 'ইউরিয়া সার প্রয়োগ করুন', type: 'fertilizer' },
+    { day: 35, task: 'কীটনাশক স্প্রে করুন', type: 'pesticide' },
+    { day: 50, task: 'দ্বিতীয় সেচ দিন', type: 'irrigation' },
+    { day: 65, task: 'ফলন পর্যবেক্ষণ করুন', type: 'observation' },
+    { day: 85, task: 'ফসল তোলা', type: 'harvesting' },
+  ],
 };
 
-const cropNames = ['ধান', 'গম', 'আলু', 'পেঁয়াজ', 'টমেটো', 'মরিচ', 'বেগুন', 'শসা'];
+const cropNames = ['ধান', 'গম', 'আলু', 'পেঁয়াজ', 'টমেটো', 'মরিচ'];
 
 export default function MyCropsPage() {
   const { user, supabase } = useAuth();
@@ -40,14 +100,20 @@ export default function MyCropsPage() {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      const { data: tasksData } = await supabase
-        .from('crop_tasks')
-        .select('*')
-        .in('plan_id', (plansData || []).map(p => p.id))
-        .order('task_date', { ascending: true });
+      const planIds = (plansData || []).map(p => p.id);
+
+      if (planIds.length > 0) {
+        const { data: tasksData } = await supabase
+          .from('crop_tasks')
+          .select('*')
+          .in('plan_id', planIds)
+          .order('task_date', { ascending: true });
+        setTasks(tasksData || []);
+      } else {
+        setTasks([]);
+      }
 
       setPlans(plansData || []);
-      setTasks(tasksData || []);
     } catch (err) {
       console.error('Load error:', err.message);
     }
@@ -60,7 +126,7 @@ export default function MyCropsPage() {
     setAdding(true);
 
     try {
-      const { data: plan, error } = await supabase
+      const { data: plan, error: planError } = await supabase
         .from('crop_plans')
         .insert([{
           user_id: user.id,
@@ -69,16 +135,16 @@ export default function MyCropsPage() {
           land_size: landSize,
           status: 'active',
         }])
-        .select()
+        .select('id')
         .single();
 
-      if (error) {
-        alert('ফসল যোগ করতে সমস্যা হয়েছে।');
+      if (planError) {
+        console.error('Plan insert error:', planError.message);
+        alert('ফসল যোগ করতে সমস্যা হয়েছে: ' + planError.message);
         setAdding(false);
         return;
       }
 
-      // টাস্ক টাইমলাইন তৈরি
       const schedule = cropSchedules[cropName] || cropSchedules['ধান'];
       const tasksToInsert = schedule.map(item => ({
         plan_id: plan.id,
@@ -90,7 +156,8 @@ export default function MyCropsPage() {
       const { error: taskError } = await supabase.from('crop_tasks').insert(tasksToInsert);
 
       if (taskError) {
-        alert('টাস্ক তৈরিতে সমস্যা হয়েছে।');
+        console.error('Task insert error:', taskError.message);
+        alert('টাস্ক তৈরিতে সমস্যা হয়েছে: ' + taskError.message);
       } else {
         alert('ফসল যোগ হয়েছে! আপনার টাইমলাইন প্রস্তুত।');
         setLandSize('');
@@ -98,7 +165,8 @@ export default function MyCropsPage() {
         loadData();
       }
     } catch (err) {
-      alert('সার্ভার ত্রুটি।');
+      console.error('Server error:', err);
+      alert('সার্ভার ত্রুটি: ' + (err.message || 'অজানা ত্রুটি'));
     }
     setAdding(false);
   };
@@ -106,11 +174,14 @@ export default function MyCropsPage() {
   const toggleTask = async (taskId, currentStatus) => {
     const { error } = await supabase
       .from('crop_tasks')
-      .update({ is_completed: !currentStatus, completed_at: !currentStatus ? new Date().toISOString() : null })
+      .update({
+        is_completed: !currentStatus,
+        completed_at: !currentStatus ? new Date().toISOString() : null,
+      })
       .eq('id', taskId);
 
     if (error) {
-      alert('টাস্ক আপডেট করতে সমস্যা হয়েছে।');
+      alert('টাস্ক আপডেট করতে সমস্যা হয়েছে: ' + error.message);
     } else {
       loadData();
     }
@@ -118,7 +189,8 @@ export default function MyCropsPage() {
 
   if (!user) return null;
 
-  const todayTasks = tasks.filter(t => !t.is_completed && t.task_date === new Date().toISOString().split('T')[0]);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayTasks = tasks.filter(t => !t.is_completed && t.task_date === todayStr);
   const upcomingTasks = tasks.filter(t => !t.is_completed && new Date(t.task_date) > new Date());
   const completedTasks = tasks.filter(t => t.is_completed);
 
@@ -137,7 +209,7 @@ export default function MyCropsPage() {
           className="form-control mt-3"
           value={plantingDate}
           onChange={e => setPlantingDate(e.target.value)}
-          max={new Date().toISOString().split('T')[0]}
+          max={todayStr}
         />
         <input
           type="text"
@@ -168,7 +240,9 @@ export default function MyCropsPage() {
 
       {/* চলমান ফসল */}
       <h3 className="section-title" style={{ fontSize: '1.3rem' }}>চলমান ফসল</h3>
-      {plans.length > 0 ? (
+      {loading ? (
+        <p style={{ textAlign: 'center', color: '#888' }}>লোড হচ্ছে...</p>
+      ) : plans.length > 0 ? (
         <div className="card-grid">
           {plans.map(plan => {
             const planTasks = tasks.filter(t => t.plan_id === plan.id);
@@ -201,6 +275,19 @@ export default function MyCropsPage() {
             <div key={task.id} className="pending-item">
               <span>{task.task_name}</span>
               <small>{new Date(task.task_date).toLocaleDateString('bn-BD')}</small>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* সম্পন্ন কাজ */}
+      {completedTasks.length > 0 && (
+        <div style={{ marginTop: '2rem' }}>
+          <h3 className="section-title" style={{ fontSize: '1.3rem' }}>✅ সম্পন্ন কাজ</h3>
+          {completedTasks.slice(0, 10).map(task => (
+            <div key={task.id} className="pending-item" style={{ background: '#f0f7f0' }}>
+              <span>{task.task_name}</span>
+              <small>{new Date(task.completed_at).toLocaleDateString('bn-BD')}</small>
             </div>
           ))}
         </div>

@@ -25,7 +25,6 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
 
-  // Supabase recovery লিংক থেকে type=recovery ধরা
   useEffect(() => {
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
@@ -34,7 +33,6 @@ export default function AuthPage() {
     }
   }, []);
 
-  // ✅ Site URL – প্রোডাকশনে ঠিকঠাক কাজ করবে
   const getSiteUrl = () => {
     if (typeof window !== 'undefined') {
       if (window.location.hostname === 'localhost') {
@@ -45,7 +43,6 @@ export default function AuthPage() {
     return 'https://www.krishipath.com';
   };
 
-  // Google Sign-In
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
@@ -67,7 +64,7 @@ export default function AuthPage() {
     setSuccess('');
     setLoading(true);
 
-    // Password reset mode
+    // Reset password mode
     if (resetMode) {
       const { error: resetErr } = await supabase.auth.updateUser({ password });
       if (resetErr) {
@@ -98,19 +95,25 @@ export default function AuthPage() {
       }
 
       if (data.user) {
-        await supabase.from('profiles').insert([
-          { id: data.user.id, name, phone, role, email },
+        // প্রোফাইল টেবিলে ইনসার্ট
+        const { error: profileError } = await supabase.from('profiles').insert([
+          { id: data.user.id, name: name || email.split('@')[0], phone, role, email },
         ]);
 
-        // Email verification required
+        if (profileError) {
+          console.warn('Profile create error:', profileError.message);
+        }
+
+        // Email verification needed
         if (!data.session) {
           setVerificationSent(true);
           setLoading(false);
           return;
         }
 
-        alert('রেজিস্ট্রেশন সফল! এখন লগইন করুন।');
-        router.push(`/auth?mode=login&redirect=${encodeURIComponent(redirectTo)}`);
+        // If session exists (auto-confirm on), go to login
+        setSuccess('রেজিস্ট্রেশন সফল! এখন লগইন করুন।');
+        setTimeout(() => router.push('/auth?mode=login'), 1500);
       }
     } else {
       // Login mode
@@ -201,7 +204,7 @@ export default function AuthPage() {
     );
   }
 
-  // স্বাভাবিক লগইন / রেজিস্টার / ফরগট
+  // লগইন / রেজিস্টার / ফরগট
   return (
     <div className="auth-container">
       <div className="form-card">
@@ -243,7 +246,7 @@ export default function AuthPage() {
                 </>
               )}
               <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-                {loading ? 'অপেক্ষা করুন...' : 'সাবমিট'}
+                {loading ? 'অপেক্ষা করুন...' : mode === 'login' ? 'লগইন' : 'রেজিস্টার করুন'}
               </button>
             </form>
 

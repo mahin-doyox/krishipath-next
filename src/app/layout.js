@@ -4,6 +4,7 @@ import { AuthProvider } from '@/components/AuthProvider';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AnnouncementPopup from '@/components/AnnouncementPopup';
+import RegisterSW from '@/components/RegisterSW';
 import { createClient } from '@/lib/supabase/server';
 
 // variable: '--font-noto' মুছে দেওয়া হয়েছে
@@ -46,6 +47,7 @@ export default async function RootLayout({ children }) {
       {/* এখানে className ব্যবহার করে ফন্টটি পুরো বডিতে অ্যাপ্লাই করা হলো */}
       <body className={notoSansBengali.className}>
         <AuthProvider>
+          <RegisterSW />
           <Navbar />
           <AnnouncementPopup message={announcementMessage} />
           {children}

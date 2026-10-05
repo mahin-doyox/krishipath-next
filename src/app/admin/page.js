@@ -201,7 +201,13 @@ export default function AdminPage() {
   const sendAdminNotification = async () => {
     if (!notifMsg) return alert('মেসেজ লিখুন');
     const { data: profiles } = await supabase.from('profiles').select('id');
-    if (profiles) for (let p of profiles) await supabase.from('notifications').insert([{ user_id: p.id, message: '🔔 অ্যাডমিন: ' + notifMsg }]);
+    if (profiles?.length) {
+      const rows = profiles.map((p) => ({ user_id: p.id, message: '🔔 অ্যাডমিন: ' + notifMsg }));
+      for (let i = 0; i < rows.length; i += 500) {            // একসাথে ৫০০ জন করে, হাজার ইউজারেও দ্রুত
+        const { error } = await supabase.from('notifications').insert(rows.slice(i, i + 500));
+        if (error) return alert('পাঠানো যায়নি: ' + error.message);
+      }
+    }
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       new Notification('কৃষিপথ', { body: '🔔 অ্যাডমিন: ' + notifMsg, icon: '/icon-192.png' });
     }

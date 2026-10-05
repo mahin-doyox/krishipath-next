@@ -95,14 +95,7 @@ export default function AuthPage() {
       }
 
       if (data.user) {
-        // প্রোফাইল টেবিলে ইনসার্ট
-        const { error: profileError } = await supabase.from('profiles').insert([
-          { id: data.user.id, name: name || email.split('@')[0], phone, role, email },
-        ]);
-
-        if (profileError) {
-          console.warn('Profile create error:', profileError.message);
-        }
+        // প্রোফাইল এখন ডাটাবেজ ট্রিগার (handle_new_user) তৈরি করে — এখানে আর ইনসার্ট করা হয় না
 
         // Email verification needed
         if (!data.session) {

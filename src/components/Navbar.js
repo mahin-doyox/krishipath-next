@@ -37,10 +37,12 @@ export default function Navbar() {
     const interval = setInterval(getCount, 60000);
     const onFocus = () => getCount();
     window.addEventListener('focus', onFocus);
+    window.addEventListener('notifs-changed', getCount);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('notifs-changed', getCount);
     };
   }, [user, supabase]);
 

@@ -131,7 +131,7 @@ export default function AuthPage() {
     setLoading(true);
 
     const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${getSiteUrl()}/auth?mode=reset`,
+      redirectTo: `${getSiteUrl()}/auth/callback?next=/auth/reset`,
     });
 
     setLoading(false);
@@ -139,7 +139,7 @@ export default function AuthPage() {
     if (error) {
       setError(error.message);
     } else {
-      setSuccess('পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে।');
+      setSuccess('পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে। একই ফোন/ব্রাউজারে ইমেইল খুলে লিংকে ক্লিক করুন।');
       setTimeout(() => router.push('/auth?mode=login'), 2000);
     }
   };

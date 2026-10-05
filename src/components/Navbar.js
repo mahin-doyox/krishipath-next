@@ -74,6 +74,7 @@ export default function Navbar() {
     { href: '/crop-disease', label: 'রোগ নির্ণয়', icon: 'fa-microscope' },
     { href: '/crop-chat', label: 'কৃষি চ্যাট', icon: 'fa-robot' },
     { href: '/my-crops', label: 'আমার ফসল', icon: 'fa-seedling' },
+    { href: '/fertilizer', label: 'সার হিসাব', icon: 'fa-calculator' },
     { href: '/profile', label: 'প্রোফাইল', icon: 'fa-user' },
   ];
 

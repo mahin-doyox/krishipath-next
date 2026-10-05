@@ -26,7 +26,7 @@ export default function CropDiseasePage() {
 
   const getHistory = async () => {
     try {
-      const scans = await getUserScans(user.id);
+      const scans = await getUserScans();
       setHistory(scans || []);
     } catch (err) {
       console.error('History fetch error:', err);
@@ -77,6 +77,14 @@ export default function CropDiseasePage() {
     });
   };
 
+  const fileToBase64 = (blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
   const handleSubmit = async () => {
     if (!user) {
       router.push(`/auth?mode=login&redirect=${encodeURIComponent('/crop-disease')}`);
@@ -88,31 +96,27 @@ export default function CropDiseasePage() {
 
     try {
       const resizedBlob = await resizeImage(selectedFile);
-      const reader = new FileReader();
-      reader.readAsDataURL(resizedBlob);
-      reader.onload = async () => {
-        const base64Image = reader.result.split(',')[1];
-        const data = await detectDisease(base64Image);
-        if (data.error) {
-          setError(data.error);
-          setLoading(false);
-          return;
-        }
+      const base64Image = await fileToBase64(resizedBlob);
 
-        setResult(data);
-        // ছবি Supabase Storage-এ আপলোড করে স্থায়ী URL নাও
-        const permanentUrl = await uploadScanImage(base64Image, user.id);
-        // ডাটাবেজে স্থায়ী URL সংরক্ষণ করো
-        await saveScan(user.id, permanentUrl, data.label, data.confidence);
-        // ইতিহাস আপডেট
-        await getHistory();
-        setLoading(false);
-      };
+      const data = await detectDisease(base64Image);
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+      setResult(data);
+
+      // ছবি private bucket-এ আপলোড, শুধু পাথ সংরক্ষণ (user id সার্ভার নিজেই নেয়)
+      const path = await uploadScanImage(base64Image);
+      if (path) await saveScan(path, data.label, data.confidence);
+      await getHistory();
     } catch (err) {
       setError('ছবি প্রক্রিয়াকরণে সমস্যা হয়েছে।');
+    } finally {
       setLoading(false);
     }
   };
+
+  const TREAT_LABELS = { biological: '🌿 জৈব উপায়', chemical: '🧪 রাসায়নিক উপায়', prevention: '🛡️ প্রতিরোধ' };
 
   return (
     <div className="container" style={{ padding: '1.5rem 0 2rem', maxWidth: '700px', margin: '0 auto' }}>
@@ -166,6 +170,41 @@ export default function CropDiseasePage() {
                 <h3>🧬 নির্ণীত রোগ</h3>
                 <div className="value" style={{ fontSize: '1.5rem', color: 'var(--primary)', wordBreak: 'break-word' }}>{result.label}</div>
                 <div className="trend">বিশ্বাসযোগ্যতা: {result.confidence}%</div>
+
+                {result.lowConfidence && (
+                  <p style={{ color: '#b45309', marginTop: '0.8rem' }}>
+                    ⚠️ ফলাফল নিশ্চিত নয়। পরিষ্কার আলোয় আক্রান্ত পাতার কাছ থেকে আবার ছবি তুলুন, অথবা উপজেলা কৃষি অফিসে দেখান।
+                  </p>
+                )}
+
+                {result.treatment && (
+                  <div style={{ textAlign: 'left', marginTop: '1rem' }}>
+                    {Object.entries(TREAT_LABELS).map(([key, title]) =>
+                      Array.isArray(result.treatment[key]) && result.treatment[key].length > 0 ? (
+                        <div key={key} style={{ marginBottom: '0.7rem' }}>
+                          <strong>{title}</strong>
+                          <ul style={{ margin: '0.3rem 0 0 1.2rem' }}>
+                            {result.treatment[key].map((t, i) => <li key={i}>{t}</li>)}
+                          </ul>
+                        </div>
+                      ) : null
+                    )}
+                    <small style={{ color: '#888' }}>চিকিৎসার তথ্য ইংরেজিতে আসতে পারে। ওষুধ ব্যবহারের আগে লেবেল পড়ুন।</small>
+                  </div>
+                )}
+
+                {result.others?.length > 0 && (
+                  <div style={{ textAlign: 'left', marginTop: '1rem' }}>
+                    <strong>অন্যান্য সম্ভাবনা</strong>
+                    <ul style={{ margin: '0.3rem 0 0 1.2rem' }}>
+                      {result.others.map((o, i) => <li key={i}>{o.label} ({o.confidence}%)</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                <Link href="/crop-chat" className="btn btn-outline btn-sm" style={{ marginTop: '1rem', display: 'inline-block' }}>
+                  💬 এই রোগের ওষুধ ও পরামর্শ চ্যাটে জিজ্ঞাসা করুন
+                </Link>
               </div>
             )}
           </div>

@@ -18,7 +18,7 @@ export default function CropChatPage() {
   // হিস্টরি লোড
   useEffect(() => {
     if (user) {
-      getChatHistory(user.id).then(setChats);
+      getChatHistory().then(setChats);
     }
   }, [user]);
 
@@ -40,7 +40,7 @@ export default function CropChatPage() {
     setChats(prev => [...prev, { id: Date.now(), message: userMsg, reply: '...' }]);
     setMessage('');
 
-    const data = await sendChatMessage(user.id, userMsg);
+    const data = await sendChatMessage(userMsg);
 
     if (data.error) {
       setError(data.error);
